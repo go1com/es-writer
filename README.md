@@ -16,7 +16,7 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
 ```
 {
   "uri":  "/go1_dev/portal/111/_create",
-  "body": "{"id":111}"
+  "body": {"id":111}
 }
 ```
 
@@ -24,8 +24,8 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
 
 ```
 {
-  "uri":         "/go1_dev/eck_metadata/333/_update",
-  "body":        "{"doc":{"field_x":"xxxxx"}}"
+  "uri":   "/go1_dev/eck_metadata/333/_update",
+  "body":  {"doc":{"field_x":"xxxxx"}}
 }
 ```
 
@@ -35,9 +35,9 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
 {
   "uri":  "/go1_dev/enrolment/_update_by_query",
   "body": {
-    "query":{
+    "query": {
         "term": {"account.id":333}},
-        "script":{
+        "script": {
             "inline": "ctx._source.account.managers = params.managers",
             "params":{
                 "managers":[1,2,3]
