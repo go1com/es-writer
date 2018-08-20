@@ -3,6 +3,14 @@ ES-Writer
 
 Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
 
+## URL format
+
+    /path
+        ?routing=STRING
+        &parent=STRING
+        &refresh=true|false
+        &wait_for_completion=true|false
+
 ## Index
 
 ```
@@ -53,6 +61,14 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
 ```
 {
   "uri":  "/go1_dev/_delete_by_query",
-  "body": "{"query":{"query":{"term":{"status":0}}}}"
+  "body": {
+    "query": {
+        "query": {
+            "term": {
+                "status":0
+            }
+        }
+    }
+  }
 }
 ```
