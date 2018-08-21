@@ -11,8 +11,8 @@ import (
 	es "go1/a-wip/elastic"
 )
 
-func NewInputMessage(raw []byte) (*InputMessage, error) {
-	m := InputMessage{}
+func NewAction(deliveryTag uint64, raw []byte) (*Action, error) {
+	m := Action{}
 	err := json.Unmarshal(raw, &m)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse m: %s", err.Error())
@@ -91,7 +91,9 @@ func NewInputMessage(raw []byte) (*InputMessage, error) {
 	return &m, nil
 }
 
-type InputMessage struct {
+type Action struct {
+	DeliveryTag uint64
+
 	Method            string      `json:"http_method"`
 	Uri               string      `json:"uri"`
 	Body              interface{} `json:"body"`
@@ -112,72 +114,97 @@ type InputMessage struct {
 	// wait_for_active_shards
 }
 
-func (m *InputMessage) Bulkable() bool {
-	if strings.HasSuffix(m.Uri, "/_update_by_query") {
-		return false
+func (a *Action) Bulkable() string {
+	if strings.HasSuffix(a.Uri, "/_update_by_query") {
+		return "_update_by_query"
 	}
 
-	if strings.HasSuffix(m.Uri, "/_delete_by_query") {
-		return false
+	if strings.HasSuffix(a.Uri, "/_delete_by_query") {
+		return "_delete_by_query"
 	}
 
-	return true
+	return "bulkable"
 }
 
-func (m *InputMessage) BuildUpdateByQueryRequest(client *elastic.Client) (*elastic.UpdateByQueryService, error) {
-	req := client.UpdateByQuery(m.Index)
+func (a *Action) BuildUpdateByQueryRequest(client *elastic.Client) (*elastic.UpdateByQueryService, error) {
+	req := client.UpdateByQuery(a.Index)
 
-	if m.Routing != "" {
-		req.Routing(m.Routing)
+	if a.Routing != "" {
+		req.Routing(a.Routing)
 	}
 
-	if m.DocType != "" {
-		req.Type(m.DocType)
+	if a.DocType != "" {
+		req.Type(a.DocType)
 	}
 
-	if m.Refresh {
+	if a.Refresh {
 		req.Refresh("yes")
 	}
 
-	if m.Conflict != "" {
-		req.Conflicts(m.Conflict)
+	if a.Conflict != "" {
+		req.Conflicts(a.Conflict)
 	}
 
-	q := es.NewSimpleQuery(m.Body)
+	q := es.NewSimpleQuery(a.Body)
 	req.Query(q)
 
 	return req, nil
 }
 
-func (m *InputMessage) BuildRequest() (elastic.BulkableRequest, error) {
-	if "DELETE" == m.Method {
+func (a *Action) BuildDeleteByQueryRequest(client *elastic.Client) (*elastic.DeleteByQueryService, error) {
+	req := client.DeleteByQuery()
+
+	if a.Routing != "" {
+		req.Routing(a.Routing)
+	}
+
+	if a.DocType != "" {
+		req.Type(a.DocType)
+	}
+
+	if a.Refresh {
+		req.Refresh("yes")
+	}
+
+	if a.Conflict != "" {
+		req.Conflicts(a.Conflict)
+	}
+
+	q := es.NewSimpleQuery(a.Body)
+	req.Query(q)
+
+	return req, nil
+}
+
+func (a *Action) BuildRequest() (elastic.BulkableRequest, error) {
+	if "DELETE" == a.Method {
 		req := elastic.NewBulkDeleteRequest()
-		req.Routing(m.Routing)
-		req.Parent(m.Parent)
-		req.Id(m.DocId)
-		req.Version(m.Version)
+		req.Routing(a.Routing)
+		req.Parent(a.Parent)
+		req.Id(a.DocId)
+		req.Version(a.Version)
 
 		return req, nil
 	}
 
-	if strings.HasSuffix(m.Uri, "/_update") {
+	if strings.HasSuffix(a.Uri, "/_update") {
 		req := elastic.NewBulkUpdateRequest()
-		req.Routing(m.Routing)
-		req.Parent(m.Parent)
-		req.Id(m.DocId)
-		req.Version(m.Version)
-		req.RetryOnConflict(m.RetryOnConflict)
-		req.Doc(m.Body)
+		req.Routing(a.Routing)
+		req.Parent(a.Parent)
+		req.Id(a.DocId)
+		req.Version(a.Version)
+		req.RetryOnConflict(a.RetryOnConflict)
+		req.Doc(a.Body)
 		// req.Script()
 
 		return req, nil
 	}
 
-	if strings.HasSuffix(m.Uri, "/_create") {
+	if strings.HasSuffix(a.Uri, "/_create") {
 		req := elastic.NewBulkIndexRequest()
-		req.Version(m.Version)
-		req.VersionType(m.VersionType)
-		req.RetryOnConflict(m.RetryOnConflict)
+		req.Version(a.Version)
+		req.VersionType(a.VersionType)
+		req.RetryOnConflict(a.RetryOnConflict)
 
 		return req, nil
 	}

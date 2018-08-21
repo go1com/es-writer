@@ -18,7 +18,7 @@ func main() {
 				}
 			}
 `)
-		msg, err := a_wip.NewInputMessage(input)
+		msg, err := a_wip.NewAction(111, input)
 		if err != nil {
 			return
 		}
