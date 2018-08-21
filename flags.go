@@ -35,7 +35,7 @@ func NewFlags() Flags {
 	f.TickInterval = flag.Duration("tick-iterval", 5*time.Second, "")
 	f.QueueName = flag.String("queue-name", "a-wip", "")
 	f.ConsumerName = flag.String("consumer-name", "wip-rabbit-mq", "")
-	f.EsUrl = flag.String("es-url", "http://127.0.0.1:9200", "")
+	f.EsUrl = flag.String("es-url", "http://127.0.0.1:9200/?sniff=false", "")
 	flag.Parse()
 
 	return f
@@ -53,7 +53,9 @@ func (f *Flags) RabbitMqConnection() (*amqp.Connection, error) {
 		select
 		{
 		case err := <-conCloseChan:
-			logrus.WithError(err).Panicln("RabbitMQ connection error.")
+			if err != nil {
+				logrus.WithError(err).Panicln("RabbitMQ connection error.")
+			}
 		}
 	}()
 

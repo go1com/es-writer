@@ -21,6 +21,7 @@ type Element struct {
 	WaitForCompletion bool
 	RetryOnConflict   int    // only available for create, update
 	Conflict          string // only available for update_by_query
+	// wait_for_active_shards
 
 	Request     elastic.BulkableRequest
 	Index       string
@@ -28,11 +29,9 @@ type Element struct {
 	DocId       string
 	Version     int64
 	VersionType string
-
-	// wait_for_active_shards
 }
 
-func (e *Element) String() string {
+func (e Element) String() string {
 	lines, err := e.Source()
 	if err != nil {
 		return fmt.Sprintf("error: %v", err)
@@ -41,7 +40,7 @@ func (e *Element) String() string {
 	return strings.Join(lines, "\n")
 }
 
-func (e *Element) Source() ([]string, error) {
+func (e Element) Source() ([]string, error) {
 	var err error
 	var command string
 	var body string
