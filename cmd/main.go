@@ -3,33 +3,35 @@ package main
 import (
 	"fmt"
 	"github.com/streadway/amqp"
-	"go1/a-wip"
+	"go1/es-writer"
 	"time"
 	"github.com/Sirupsen/logrus"
 	"context"
+	"go1/es-writer/action"
+	"go1/es-writer/watcher"
 )
 
 func main() {
-	o := a_wip.NewOpts()
-	con, err := a_wip.Connection(*o.Url)
+	o := es_writer.NewFlags()
+	con, err := watcher.Connection(*o.Url)
 	if err != nil {
 		fmt.Println("ERROR", err)
 	}
 
 	defer con.Close()
 
-	ch := a_wip.Channel(con, *o.Kind, *o.Exchange, *o.PrefetchCount, *o.PrefetchSize)
+	ch := watcher.Channel(con, *o.Kind, *o.Exchange, *o.PrefetchCount, *o.PrefetchSize)
 	defer ch.Close()
 
-	messages := a_wip.Messages(ch, *o.QueueName, *o.Exchange, *o.RoutingKey, *o.ConsumerName)
+	messages := watcher.Messages(ch, *o.QueueName, *o.Exchange, *o.RoutingKey, *o.ConsumerName)
 	ticker := time.NewTicker(5 * time.Second)
 	listen(ch, messages, ticker, *o.PrefetchCount)
 }
 
 func listen(ch *amqp.Channel, messages <-chan amqp.Delivery, ticker *time.Ticker, count int) (error) {
 	ctx := context.Background()
-	actions := a_wip.NewActions()
-	client, bulk, err := a_wip.ElasticSearchTools(ctx)
+	actions := action.NewActions()
+	client, bulk, err := action.Clients(ctx)
 
 	if err != nil {
 		return err
@@ -65,7 +67,7 @@ func listen(ch *amqp.Channel, messages <-chan amqp.Delivery, ticker *time.Ticker
 			}
 
 		case m := <-messages:
-			if action, err := a_wip.NewAction(m.DeliveryTag, m.Body); err != nil {
+			if action, err := action.NewAction(m.DeliveryTag, m.Body); err != nil {
 				logrus.
 					WithError(err).
 					Errorf("Failed to convert queue message to Elastic Search request.")

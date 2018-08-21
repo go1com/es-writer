@@ -1,8 +1,8 @@
-package a_wip
+package es_writer
 
 import "flag"
 
-type Opts struct {
+type Flags struct {
 	Url           *string
 	Kind          *string
 	Exchange      *string
@@ -13,8 +13,8 @@ type Opts struct {
 	ConsumerName  *string
 }
 
-func NewOpts() Opts {
-	o := Opts{}
+func NewFlags() Flags {
+	o := Flags{}
 	o.Url = flag.String("url", "amqp://go1:go1@127.0.0.1:5672/", "")
 	o.Kind = flag.String("kind", "topic", "")
 	o.Exchange = flag.String("exchange", "events", "")

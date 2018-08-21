@@ -1,15 +1,15 @@
 package main
 
 import (
-	"go1/a-wip"
 	"context"
 	"gopkg.in/olivere/elastic.v5"
 	"github.com/Sirupsen/logrus"
+	"go1/es-writer/action"
 )
 
 func main() {
 	ctx := context.Background()
-	_, bulk, _ := a_wip.ElasticSearchTools(ctx)
+	_, bulk, _ := action.Clients(ctx)
 
 	req := elastic.NewBulkDeleteRequest()
 	req.Index("go1_dev")

@@ -1,4 +1,4 @@
-package a_wip
+package action
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func ElasticSearchTools(ctx context.Context) (*elastic.Client, *elastic.BulkProcessor, error) {
+func Clients(ctx context.Context) (*elastic.Client, *elastic.BulkProcessor, error) {
 	cfg, err := config.Parse("")
 	if err != nil {
 		logrus.Fatalf("failed to parse URL: %s", err.Error())

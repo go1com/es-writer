@@ -1,4 +1,4 @@
-package elastic
+package action
 
 type SimpleQuery struct {
 	body interface{}

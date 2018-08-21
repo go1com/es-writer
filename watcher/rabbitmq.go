@@ -1,4 +1,4 @@
-package a_wip
+package watcher
 
 import (
 	"github.com/streadway/amqp"

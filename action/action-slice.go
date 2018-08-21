@@ -1,4 +1,4 @@
-package a_wip
+package action
 
 type Actions struct {
 	items []Action
