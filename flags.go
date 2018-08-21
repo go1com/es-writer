@@ -1,6 +1,9 @@
 package es_writer
 
-import "flag"
+import (
+	"flag"
+	"time"
+)
 
 type Flags struct {
 	Url           *string
@@ -9,21 +12,25 @@ type Flags struct {
 	RoutingKey    *string
 	PrefetchCount *int
 	PrefetchSize  *int
+	TickInterval  *time.Duration
 	QueueName     *string
 	ConsumerName  *string
+	EsUrl         *string
 }
 
 func NewFlags() Flags {
-	o := Flags{}
-	o.Url = flag.String("url", "amqp://go1:go1@127.0.0.1:5672/", "")
-	o.Kind = flag.String("kind", "topic", "")
-	o.Exchange = flag.String("exchange", "events", "")
-	o.RoutingKey = flag.String("routing-key", "wip", "")
-	o.PrefetchCount = flag.Int("prefetch-count", 50, "")
-	o.PrefetchSize = flag.Int("prefetch-size", 0, "")
-	o.QueueName = flag.String("queue-name", "a-wip", "")
-	o.ConsumerName = flag.String("consumer-name", "wip-rabbit-mq", "")
+	f := Flags{}
+	f.Url = flag.String("url", "amqp://go1:go1@127.0.0.1:5672/", "")
+	f.Kind = flag.String("kind", "topic", "")
+	f.Exchange = flag.String("exchange", "events", "")
+	f.RoutingKey = flag.String("routing-key", "wip", "")
+	f.PrefetchCount = flag.Int("prefetch-count", 50, "")
+	f.PrefetchSize = flag.Int("prefetch-size", 0, "")
+	f.TickInterval = flag.Duration("tick-iterval", 5*time.Second, "")
+	f.QueueName = flag.String("queue-name", "a-wip", "")
+	f.ConsumerName = flag.String("consumer-name", "wip-rabbit-mq", "")
+	f.EsUrl = flag.String("es-url", "http://127.0.0.1:9200", "")
 	flag.Parse()
 
-	return o
+	return f
 }

@@ -6,10 +6,11 @@ import (
 	"gopkg.in/olivere/elastic.v5/config"
 	"github.com/Sirupsen/logrus"
 	"time"
+	"go1/es-writer"
 )
 
-func Clients(ctx context.Context) (*elastic.Client, *elastic.BulkProcessor, error) {
-	cfg, err := config.Parse("")
+func Clients(ctx context.Context, flags es_writer.Flags) (*elastic.Client, *elastic.BulkProcessor, error) {
+	cfg, err := config.Parse(*flags.EsUrl)
 	if err != nil {
 		logrus.Fatalf("failed to parse URL: %s", err.Error())
 
@@ -20,7 +21,7 @@ func Clients(ctx context.Context) (*elastic.Client, *elastic.BulkProcessor, erro
 	if err != nil {
 		return nil, nil, err
 	}
-
+	
 	processor, err := elastic.
 		NewBulkProcessorService(client).
 		Name("es-writter").

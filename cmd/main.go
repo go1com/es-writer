@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/streadway/amqp"
 	"go1/es-writer"
 	"time"
@@ -12,26 +11,36 @@ import (
 )
 
 func main() {
-	o := es_writer.NewFlags()
-	con, err := watcher.Connection(*o.Url)
+	flags := es_writer.NewFlags()
+	con, err := watcher.Connection(*flags.Url)
 	if err != nil {
-		fmt.Println("ERROR", err)
+		logrus.WithError(err).Fatalln("Failed to create watcher connection.")
+		return
+	} else {
+		defer con.Close()
 	}
 
-	defer con.Close()
+	ch, err := watcher.Channel(con, *flags.Kind, *flags.Exchange, *flags.PrefetchCount, *flags.PrefetchSize)
+	if err != nil {
+		logrus.WithError(err).Fatalln("Failed to create watcher channel.")
+		return
+	} else {
+		defer ch.Close()
+	}
 
-	ch := watcher.Channel(con, *o.Kind, *o.Exchange, *o.PrefetchCount, *o.PrefetchSize)
-	defer ch.Close()
-
-	messages := watcher.Messages(ch, *o.QueueName, *o.Exchange, *o.RoutingKey, *o.ConsumerName)
-	ticker := time.NewTicker(5 * time.Second)
-	listen(ch, messages, ticker, *o.PrefetchCount)
+	messages, err := watcher.Messages(ch, *flags.QueueName, *flags.Exchange, *flags.RoutingKey, *flags.ConsumerName)
+	if err != nil {
+		logrus.WithError(err).Fatalln("Failed to consume messages.")
+	} else {
+		ticker := time.NewTicker(*flags.TickInterval)
+		listen(flags, ch, messages, ticker, *flags.PrefetchCount)
+	}
 }
 
-func listen(ch *amqp.Channel, messages <-chan amqp.Delivery, ticker *time.Ticker, count int) (error) {
+func listen(flags es_writer.Flags, ch *amqp.Channel, messages <-chan amqp.Delivery, ticker *time.Ticker, count int) (error) {
 	ctx := context.Background()
 	actions := action.NewActions()
-	client, bulk, err := action.Clients(ctx)
+	client, bulk, err := action.Clients(ctx, flags)
 
 	if err != nil {
 		return err

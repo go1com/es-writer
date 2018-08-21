@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-func NewAction(deliveryTag uint64, raw []byte) (*Action, error) {
-	m := Action{}
+func NewAction(deliveryTag uint64, raw []byte) (*Element, error) {
+	m := Element{}
 	err := json.Unmarshal(raw, &m)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse m: %s", err.Error())

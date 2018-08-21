@@ -5,13 +5,41 @@ import (
 	"github.com/jmespath/go-jmespath"
 	"github.com/Sirupsen/logrus"
 	"fmt"
+	"context"
+	"go1/es-writer/action"
+	"gopkg.in/olivere/elastic.v5"
+	"go1/es-writer"
 )
 
 func main() {
+	ctx := context.Background()
+	flags := es_writer.NewFlags()
+	_, bulk, err := action.Clients(ctx, flags)
+	if err != nil {
+		logrus.WithError(err).Errorln("failed to create ES clients")
+	}
+
+	req := elastic.NewBulkDeleteRequest()
+	fmt.Println(req)
+	return
+
+	req.Index("go1_dev")
+	req.Type("portal")
+	req.Id("12344")
+
+	bulk.Add(req)
+
+	err = bulk.Flush()
+	if err != nil {
+		logrus.WithError(err).Errorf("Failed to perform bulk request to Elastic Search")
+	}
+
 	if false {
-		found()
-	} else {
-		notFound()
+		if false {
+			found()
+		} else {
+			notFound()
+		}
 	}
 }
 
