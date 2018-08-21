@@ -5,6 +5,7 @@ import (
 	"strings"
 	"fmt"
 	"encoding/json"
+	"github.com/jmespath/go-jmespath"
 )
 
 type Element struct {
@@ -41,28 +42,88 @@ func (e Element) String() string {
 }
 
 func (e Element) Source() ([]string, error) {
-	var err error
-	var command string
-	var body string
+	var (
+		result  interface{}
+		cmd     map[string]map[string]string
+		command []byte
+		body    []byte
+		err     error
+	)
 
-	// Build command line
-	// ---------------------
+	if strings.HasSuffix(e.Uri, "/_create") {
+		// [command-line] { "index" : { "_index" : "test", "_type" : "type1", "_id" : "1" } }
+		cmd = map[string](map[string]string){
+			"index": {
+				"_index": e.Index,
+				"_type":  e.DocType,
+				"_id":    e.DocId,
+			},
+		}
 
-	// index
-	// update
-
-	// Build body line
-	// ---------------------
-	if e.Body != nil {
-		byteSlice, err := json.Marshal(e.Body)
+		command, err = json.Marshal(cmd)
 		if err != nil {
 			return nil, err
 		}
 
-		body = string(byteSlice)
+		// [body-line] { "field1" : "value1" }
+		body, err = json.Marshal(e.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		return []string{string(command), string(body)}, nil
+	} else if strings.HasSuffix(e.Uri, "/_update") {
+		// [command-line] { "update" : {"_id" : "1", "_type" : "type1", "_index" : "test"} }
+		cmd = map[string]map[string]string{
+			"update": {
+				"_index": e.Index,
+				"_type":  e.DocType,
+				"_id":    e.DocId,
+			},
+		}
+
+		command, err = json.Marshal(cmd)
+		if err != nil {
+			return nil, err
+		}
+
+		keys := []string{
+			"doc",    // case 1: { "doc" : {"field2" : "value2"} }
+			"script", // case 2: { "script" : { "inline": "ctx._source.counter += params.param1", "lang" : "painless", "params" : {"param1" : 1}}, "upsert" : {"counter" : 1}}
+		}
+
+		for _, key := range keys {
+			result, err = jmespath.Search(key, e.Body)
+			if result != nil {
+				body, err = json.Marshal(e.Body)
+				if err != nil {
+					return nil, err
+				}
+
+				break
+			}
+		}
+
+		return []string{string(command), string(body)}, nil
+	} else if e.Method == "DELETE" {
+		// [command-line] { "delete" : { "_index" : "test", "_type" : "type1", "_id" : "2" } }
+		cmd = map[string]map[string]string{
+			"update": {
+				"_index": e.Index,
+				"_type":  e.DocType,
+				"_id":    e.DocId,
+			},
+		}
+
+		command, err := json.Marshal(cmd)
+		if err != nil {
+			return nil, err
+		}
+
+		return []string{string(command)}, nil
 	}
 
-	return []string{command, body}, err
+	return nil, fmt.Errorf("unknown request type")
 }
 
 func (e *Element) RequestType() string {
@@ -93,7 +154,7 @@ func (e *Element) RequestType() string {
 	return "bulkable"
 }
 
-func (e *Element) BuildIndicesCreateRequest(client *elastic.Client) (*elastic.IndicesCreateService, error) {
+func (e *Element) IndicesCreateService(client *elastic.Client) (*elastic.IndicesCreateService, error) {
 	req := elastic.NewIndicesCreateService(client)
 	req.Index(e.Index)
 	body, err := json.Marshal(e.Body)
@@ -106,14 +167,14 @@ func (e *Element) BuildIndicesCreateRequest(client *elastic.Client) (*elastic.In
 	return req, nil
 }
 
-func (e *Element) BuildIndicesDeleteRequest(client *elastic.Client) (*elastic.IndicesDeleteService, error) {
+func (e *Element) IndicesDeleteService(client *elastic.Client) (*elastic.IndicesDeleteService, error) {
 	req := elastic.NewIndicesDeleteService(client)
 	req.Index([]string{e.Index})
 
 	return req, nil
 }
 
-func (e *Element) BuildUpdateByQueryRequest(client *elastic.Client) (*elastic.UpdateByQueryService, error) {
+func (e *Element) UpdateByQueryService(client *elastic.Client) (*elastic.UpdateByQueryService, error) {
 	req := client.UpdateByQuery(e.Index)
 
 	if e.Routing != "" {
@@ -138,7 +199,7 @@ func (e *Element) BuildUpdateByQueryRequest(client *elastic.Client) (*elastic.Up
 	return req, nil
 }
 
-func (e *Element) BuildDeleteByQueryRequest(client *elastic.Client) (*elastic.DeleteByQueryService, error) {
+func (e *Element) DeleteByQueryService(client *elastic.Client) (*elastic.DeleteByQueryService, error) {
 	req := client.DeleteByQuery()
 
 	if e.Routing != "" {

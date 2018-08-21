@@ -98,7 +98,7 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, capatibility strin
 			w.flush()
 		}
 
-		req, err := element.BuildUpdateByQueryRequest(w.esClient)
+		req, err := element.UpdateByQueryService(w.esClient)
 		if err != nil {
 			_, err := req.Do(ctx)
 
@@ -110,21 +110,21 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, capatibility strin
 			w.flush()
 		}
 
-		req, err := element.BuildDeleteByQueryRequest(w.esClient)
+		req, err := element.DeleteByQueryService(w.esClient)
 		if err != nil {
 			_, err := req.Do(ctx)
 			return err
 		}
 
 	case "indices_create":
-		req, err := element.BuildIndicesCreateRequest(w.esClient)
+		req, err := element.IndicesCreateService(w.esClient)
 		if err != nil {
 			_, err := req.Do(ctx)
 			return err
 		}
 
 	case "indices_delete":
-		req, err := element.BuildIndicesDeleteRequest(w.esClient)
+		req, err := element.IndicesDeleteService(w.esClient)
 		if err != nil {
 			_, err := req.Do(ctx)
 			return err
