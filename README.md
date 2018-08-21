@@ -11,7 +11,35 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
         &refresh=true|false
         &wait_for_completion=true|false
 
-## Index
+## Indices
+
+### Create
+
+```
+{
+  "http_method": "PUT",
+  "uri": "/go1_dev",
+  "body": {
+    "mapping": {
+        "portal": {
+            "_parent":  { "type": "user" },
+            "_routing": { "required": true }
+        }
+    }
+  }
+}
+```
+
+### Drop
+
+```
+{
+  "http_method": "DELETE",
+  "uri": "/go1_dev"
+}
+```
+
+## Create
 
 ```
 {
@@ -60,14 +88,15 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
 
 ```
 {
-  "uri":  "/go1_dev/_delete_by_query",
+  "http_method": "POST",
+  "uri": "/go1_dev/portal/_delete_by_query?refresh=true&wait_for_completion=true",
   "body": {
     "query": {
-        "query": {
-            "term": {
-                "status":0
-            }
+      "query": {
+        "term": {
+          "status": 0
         }
+      }
     }
   }
 }
