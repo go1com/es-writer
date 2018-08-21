@@ -3,7 +3,6 @@ package action
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jmespath/go-jmespath"
 	"net/url"
 	"strconv"
 	"strings"
@@ -15,11 +14,7 @@ func NewElement(deliveryTag uint64, raw []byte) (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse m: %s", err.Error())
 	}
-
-	if _, err := jmespath.Search("id", m.Body); err != nil {
-		return nil, fmt.Errorf("failed to parse m.body: %s", err.Error())
-	}
-
+	
 	uri, err := url.Parse(m.Uri)
 	if err != nil {
 		fmt.Printf("Failed to parse m.uri: %s.\n", err.Error())
