@@ -4,8 +4,6 @@ import (
 	"go1/es-writer"
 	"github.com/Sirupsen/logrus"
 	"context"
-	w "go1/es-writer/watcher"
-	"go1/es-writer/action"
 )
 
 func main() {
@@ -14,7 +12,7 @@ func main() {
 
 	// RabbitMQ connection & channel
 	// ---------------------
-	con, err := w.Connection(*flags.Url)
+	con, err := flags.RabbitMqConnection()
 	if err != nil {
 		logrus.WithError(err).Fatalln("Failed to create watcher connection.")
 		return
@@ -22,7 +20,7 @@ func main() {
 		defer con.Close()
 	}
 
-	ch, err := w.Channel(con, *flags.Kind, *flags.Exchange, *flags.PrefetchCount, *flags.PrefetchSize)
+	ch, err := flags.RabbitMqChannel(con)
 	if err != nil {
 		logrus.WithError(err).Fatalln("Failed to create watcher channel.")
 		return
@@ -32,18 +30,20 @@ func main() {
 
 	// ElasticSearch connection & bulk-processor
 	// ---------------------
-	es, bulk, err := action.Clients(ctx, flags)
+	es, err := flags.ElasticSearchClient()
 	if err != nil {
 		logrus.WithError(err).Fatalln("Failed to create ElasticSearch client.")
-	} else {
-		defer bulk.Close()
+	}
+
+	bulk, err := flags.ElasticSearchBulkProcessor(ctx, es)
+	if err != nil {
+		logrus.WithError(err).Fatalln("Failed to create ElasticSearch bulk processor.")
 	}
 
 	// Watcher: Listen on rabbitMQ and dispatch actions to ElasticSearch
 	// ---------------------
-	watcher := w.NewWatcher(ch, *flags.PrefetchCount, es, bulk)
-	err = watcher.Watch(ctx, flags)
-	if err != nil {
-		logrus.WithError(err).Fatalln("Failed watching.")
-	}
+	watcher := es_writer.NewWatcher(ch, *flags.PrefetchCount, es, bulk)
+	logrus.
+		WithError(watcher.Watch(ctx, flags)).
+		Fatalln("Failed watching.")
 }

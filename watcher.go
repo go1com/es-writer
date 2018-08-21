@@ -1,9 +1,8 @@
-package watcher
+package es_writer
 
 import (
 	"go1/es-writer/action"
 	"context"
-	"go1/es-writer"
 	"github.com/streadway/amqp"
 	"time"
 	"github.com/Sirupsen/logrus"
@@ -32,9 +31,9 @@ func NewWatcher(ch *amqp.Channel, count int, es *elastic.Client, bulk *elastic.B
 	}
 }
 
-func (w *Watcher) Watch(ctx context.Context, flags es_writer.Flags) (error) {
+func (w *Watcher) Watch(ctx context.Context, flags Flags) (error) {
 	ticker := time.NewTicker(*flags.TickInterval)
-	messages, err := Messages(w.ch, *flags.QueueName, *flags.Exchange, *flags.RoutingKey, *flags.ConsumerName)
+	messages, err := w.messages(flags)
 	if err != nil {
 		return err
 	}
@@ -52,6 +51,25 @@ func (w *Watcher) Watch(ctx context.Context, flags es_writer.Flags) (error) {
 	}
 
 	return nil
+}
+
+func (w *Watcher) messages(flags Flags) (<-chan amqp.Delivery, error) {
+	queue, err := w.ch.QueueDeclare(*flags.QueueName, false, false, false, false, nil, )
+	if nil != err {
+		return nil, err
+	}
+
+	err = w.ch.QueueBind(queue.Name, *flags.RoutingKey, *flags.Exchange, true, nil)
+	if nil != err {
+		return nil, err
+	}
+
+	messages, err := w.ch.Consume(queue.Name, *flags.ConsumerName, false, false, false, true, nil)
+	if nil != err {
+		return nil, err
+	}
+
+	return messages, nil
 }
 
 func (w *Watcher) onNewMessage(ctx context.Context, m amqp.Delivery) error {
