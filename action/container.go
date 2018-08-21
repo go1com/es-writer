@@ -4,7 +4,7 @@ type Container struct {
 	items []Element
 }
 
-func NewActions() *Container {
+func NewContainer() *Container {
 	return &Container{
 		items: []Element{},
 	}
