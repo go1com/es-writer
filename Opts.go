@@ -9,6 +9,8 @@ type Opts struct {
 	RoutingKey    *string
 	PrefetchCount *int
 	PrefetchSize  *int
+	QueueName     *string
+	ConsumerName  *string
 }
 
 func NewOpts() Opts {
@@ -19,6 +21,8 @@ func NewOpts() Opts {
 	o.RoutingKey = flag.String("routing-key", "wip", "")
 	o.PrefetchCount = flag.Int("prefetch-count", 50, "")
 	o.PrefetchSize = flag.Int("prefetch-size", 0, "")
+	o.QueueName = flag.String("queue-name", "a-wip", "")
+	o.ConsumerName = flag.String("consumer-name", "wip-rabbit-mq", "")
 	flag.Parse()
 
 	return o

@@ -20,8 +20,7 @@ func main() {
 	ch := a_wip.Channel(con, *o.Kind, *o.Exchange, *o.PrefetchCount, *o.PrefetchSize)
 	defer ch.Close()
 
-	messages := a_wip.Messages(ch, "a-wip", *o.Exchange, *o.RoutingKey, "wip-rabbit-mq")
-
+	messages := a_wip.Messages(ch, *o.QueueName, *o.Exchange, *o.RoutingKey, *o.ConsumerName)
 	ticker := time.NewTicker(5 * time.Second)
 	listen(ch, messages, ticker, *o.PrefetchCount)
 }
