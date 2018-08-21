@@ -1,0 +1,13 @@
+{
+  "http_method": "POST",
+  "uri": "/go1_dev/portal/_delete_by_query?refresh=true&wait_for_completion=true",
+  "body": {
+    "query": {
+      "query": {
+        "term": {
+          "status": 0
+        }
+      }
+    }
+  }
+}

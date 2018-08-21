@@ -1,0 +1,5624 @@
+{
+  "http_method": "PUT",
+  "uri": "/go1_dev",
+  "body": {
+    "mappings": {
+      "edge": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "type_id": {
+            "type": "integer"
+          },
+          "source_id": {
+            "type": "integer"
+          },
+          "target_id": {
+            "type": "integer"
+          },
+          "weight": {
+            "type": "integer"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "portal": {
+        "_parent": {
+          "type": "user"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "title": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "status": {
+            "type": "short"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "version": {
+            "type": "keyword"
+          },
+          "created": {
+            "type": "date"
+          },
+          "configuration": {
+            "type": "object"
+          },
+          "legacy": {
+            "type": "integer"
+          },
+          "logo": {
+            "type": "text"
+          },
+          "score": {
+            "type": "integer"
+          },
+          "user_count": {
+            "type": "integer"
+          },
+          "active_user_count": {
+            "type": "integer"
+          },
+          "plan": {
+            "properties": {
+              "name": {
+                "type": "keyword"
+              },
+              "status": {
+                "type": "integer"
+              },
+              "license": {
+                "type": "integer"
+              },
+              "regional": {
+                "type": "keyword"
+              }
+            }
+          },
+          "csm": {
+            "properties": {
+              "user_id": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "configuration": {
+        "_parent": {
+          "type": "portal"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "instance": {
+            "type": "keyword"
+          },
+          "namespace": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "public": {
+            "type": "integer"
+          },
+          "value": {
+            "type": "object"
+          }
+        }
+      },
+      "user": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "profile_id": {
+            "type": "integer"
+          },
+          "mail": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "first_name": {
+            "type": "keyword"
+          },
+          "last_name": {
+            "type": "keyword"
+          },
+          "created": {
+            "type": "date"
+          },
+          "login": {
+            "type": "date"
+          },
+          "access": {
+            "type": "date"
+          },
+          "status": {
+            "type": "short"
+          },
+          "allow_public": {
+            "type": "integer"
+          },
+          "avatar": {
+            "type": "text"
+          },
+          "roles": {
+            "type": "keyword"
+          },
+          "timestamp": {
+            "type": "date"
+          }
+        }
+      },
+      "account": {
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "instance": {
+            "type": "keyword"
+          },
+          "mail": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "name": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "first_name": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "last_name": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "created": {
+            "type": "date"
+          },
+          "login": {
+            "type": "date"
+          },
+          "access": {
+            "type": "date"
+          },
+          "status": {
+            "type": "short"
+          },
+          "allow_public": {
+            "type": "integer"
+          },
+          "avatar": {
+            "type": "text"
+          },
+          "roles": {
+            "type": "keyword"
+          },
+          "groups": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "timestamp": {
+            "type": "date"
+          },
+          "managers": {
+            "type": "integer"
+          },
+          "metadata": {
+            "properties": {
+              "user_id": {
+                "type": "integer"
+              },
+              "instance_id": {
+                "type": "integer"
+              },
+              "updated_at": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "dynamic_templates": [
+          {
+            "custom_field_string": {
+              "path_match": "fields_*.*.value_string",
+              "mapping": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "custom_field_text": {
+              "path_match": "fields_*.*.value_text",
+              "mapping": {
+                "type": "text"
+              }
+            }
+          },
+          {
+            "custom_field_integer": {
+              "path_match": "fields_*.*.value_integer",
+              "mapping": {
+                "type": "integer"
+              }
+            }
+          },
+          {
+            "custom_field_float": {
+              "path_match": "fields_*.*.value_float",
+              "mapping": {
+                "type": "double"
+              }
+            }
+          },
+          {
+            "custom_field_date": {
+              "path_match": "fields_*.*.value_date",
+              "mapping": {
+                "type": "date"
+              }
+            }
+          },
+          {
+            "custom_field_datetime": {
+              "path_match": "fields_*.*.value_datetime",
+              "mapping": {
+                "type": "date"
+              }
+            }
+          }
+        ]
+      },
+      "lo": {
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "origin_id": {
+            "type": "integer"
+          },
+          "remote_id": {
+            "type": "keyword"
+          },
+          "status": {
+            "type": "short"
+          },
+          "private": {
+            "type": "integer"
+          },
+          "published": {
+            "type": "integer"
+          },
+          "marketplace": {
+            "type": "integer"
+          },
+          "sharing": {
+            "type": "short"
+          },
+          "instance_id": {
+            "type": "integer"
+          },
+          "portal_name": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "language": {
+            "type": "keyword"
+          },
+          "locale": {
+            "type": "keyword"
+          },
+          "title": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "description": {
+            "type": "text"
+          },
+          "tags": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "image": {
+            "type": "text"
+          },
+          "quantity": {
+            "type": "double"
+          },
+          "collection_id": {
+            "type": "integer"
+          },
+          "pricing": {
+            "properties": {
+              "currency": {
+                "type": "keyword"
+              },
+              "price": {
+                "type": "double"
+              },
+              "tax": {
+                "type": "double"
+              },
+              "tax_included": {
+                "type": "integer"
+              },
+              "tax_display": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "double"
+              },
+              "recurring": {
+                "properties": {
+                  "recurring": {
+                    "type": "integer"
+                  },
+                  "interval": {
+                    "type": "text"
+                  },
+                  "count": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "duration": {
+            "type": "integer"
+          },
+          "assessors": {
+            "type": "integer"
+          },
+          "allow_enrolment": {
+            "type": "integer"
+          },
+          "totalEnrolment": {
+            "type": "integer"
+          },
+          "created": {
+            "type": "date"
+          },
+          "updated": {
+            "type": "date"
+          },
+          "fields": {
+            "type": "object"
+          },
+          "event": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "lo_id": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "start": {
+                "type": "date"
+              },
+              "end": {
+                "type": "date"
+              },
+              "timezone": {
+                "type": "keyword"
+              },
+              "seats": {
+                "type": "integer"
+              },
+              "available_seats": {
+                "type": "integer"
+              },
+              "country": {
+                "type": "keyword"
+              },
+              "country_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "administrative_area": {
+                "type": "keyword"
+              },
+              "administrative_area_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "sub_administrative_area": {
+                "type": "keyword"
+              },
+              "locality": {
+                "type": "keyword"
+              },
+              "dependent_locality": {
+                "type": "keyword"
+              },
+              "thoroughfare": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "premise": {
+                "type": "keyword"
+              },
+              "sub_premise": {
+                "type": "keyword"
+              },
+              "organisation_name": {
+                "type": "keyword"
+              },
+              "name_line": {
+                "type": "keyword"
+              },
+              "postal_code": {
+                "type": "keyword"
+              }
+            }
+          },
+          "items_count": {
+            "type": "integer"
+          },
+          "authors": {
+            "type": "nested",
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "profile_id": {
+                "type": "integer"
+              },
+              "mail": {
+                "type": "keyword"
+              },
+              "name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "first_name": {
+                "type": "keyword"
+              },
+              "last_name": {
+                "type": "keyword"
+              },
+              "created": {
+                "type": "date"
+              },
+              "login": {
+                "type": "date"
+              },
+              "access": {
+                "type": "date"
+              },
+              "status": {
+                "type": "short"
+              },
+              "allow_public": {
+                "type": "integer"
+              },
+              "avatar": {
+                "type": "text"
+              },
+              "roles": {
+                "type": "keyword"
+              },
+              "timestamp": {
+                "type": "date"
+              }
+            }
+          },
+          "group_ids": {
+            "type": "integer"
+          },
+          "data": {
+            "properties": {
+              "allow_resubmit": {
+                "type": "integer"
+              },
+              "label": {
+                "type": "keyword"
+              },
+              "pass_rate": {
+                "type": "float"
+              },
+              "url": {
+                "type": "text"
+              },
+              "single_li": {
+                "type": "short"
+              }
+            }
+          },
+          "locations": {
+            "type": "nested",
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "country": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "country_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "administrative_area": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "administrative_area_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "locality": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "thoroughfare": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              }
+            }
+          },
+          "vote": {
+            "properties": {
+              "percent": {
+                "type": "integer"
+              },
+              "rank": {
+                "type": "integer"
+              },
+              "like": {
+                "type": "integer"
+              },
+              "dislike": {
+                "type": "integer"
+              }
+            }
+          },
+          "metadata": {
+            "properties": {
+              "parents_authors_ids": {
+                "type": "integer"
+              },
+              "parents_id": {
+                "type": "integer"
+              },
+              "instance_id": {
+                "type": "integer"
+              },
+              "membership": {
+                "type": "integer"
+              },
+              "updated_at": {
+                "type": "integer"
+              },
+              "shared": {
+                "type": "short"
+              },
+              "shared_passive": {
+                "type": "short"
+              },
+              "customized": {
+                "type": "short"
+              },
+              "realm": {
+                "type": "short"
+              }
+            }
+          }
+        }
+      },
+      "lo_group": {
+        "_parent": {
+          "type": "lo"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "lo_id": {
+            "type": "integer"
+          },
+          "instance_id": {
+            "type": "integer"
+          }
+        }
+      },
+      "lo_tag": {
+        "properties": {
+          "title": {
+            "type": "keyword"
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "metadata": {
+            "properties": {
+              "instance_id": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "lo_policy": {
+        "_parent": {
+          "type": "lo"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "realm": {
+            "type": "short"
+          },
+          "portal_id": {
+            "type": "integer"
+          },
+          "entity_type": {
+            "type": "keyword"
+          },
+          "entity_id": {
+            "type": "integer"
+          },
+          "member_ids": {
+            "type": "integer"
+          },
+          "access_portal_ids": {
+            "type": "integer"
+          },
+          "metadata": {
+            "properties": {
+              "instance_id": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "plan": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "assigner_id": {
+            "type": "integer"
+          },
+          "entity_type": {
+            "type": "keyword"
+          },
+          "entity_id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "short"
+          },
+          "created": {
+            "type": "date"
+          },
+          "due": {
+            "type": "date"
+          },
+          "data": {
+            "type": "object"
+          },
+          "metadata": {
+            "properties": {
+              "instance_id": {
+                "type": "integer"
+              },
+              "updated_at": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "enrolment": {
+        "_parent": {
+          "type": "lo"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "profile_id": {
+            "type": "integer"
+          },
+          "lo_id": {
+            "type": "integer"
+          },
+          "parent_id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "short"
+          },
+          "last_status": {
+            "type": "short"
+          },
+          "quantity": {
+            "type": "double"
+          },
+          "result": {
+            "type": "integer"
+          },
+          "pass": {
+            "type": "integer"
+          },
+          "assessors": {
+            "type": "integer"
+          },
+          "assigned_date": {
+            "type": "date"
+          },
+          "start_date": {
+            "type": "date"
+          },
+          "end_date": {
+            "type": "date"
+          },
+          "due_date": {
+            "type": "date"
+          },
+          "submitted_date": {
+            "type": "date"
+          },
+          "marked_date": {
+            "type": "date"
+          },
+          "expire_date": {
+            "type": "date"
+          },
+          "begin_expire": {
+            "type": "date"
+          },
+          "changed": {
+            "type": "date"
+          },
+          "created": {
+            "type": "date"
+          },
+          "duration": {
+            "type": "integer"
+          },
+          "is_assigned": {
+            "type": "short"
+          },
+          "lo": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "type": {
+                "type": "keyword"
+              },
+              "origin_id": {
+                "type": "integer"
+              },
+              "remote_id": {
+                "type": "keyword"
+              },
+              "status": {
+                "type": "short"
+              },
+              "private": {
+                "type": "integer"
+              },
+              "published": {
+                "type": "integer"
+              },
+              "marketplace": {
+                "type": "integer"
+              },
+              "sharing": {
+                "type": "short"
+              },
+              "instance_id": {
+                "type": "integer"
+              },
+              "portal_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "language": {
+                "type": "keyword"
+              },
+              "locale": {
+                "type": "keyword"
+              },
+              "title": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "description": {
+                "type": "text"
+              },
+              "tags": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "image": {
+                "type": "text"
+              },
+              "quantity": {
+                "type": "double"
+              },
+              "collection_id": {
+                "type": "integer"
+              },
+              "pricing": {
+                "properties": {
+                  "currency": {
+                    "type": "keyword"
+                  },
+                  "price": {
+                    "type": "double"
+                  },
+                  "tax": {
+                    "type": "double"
+                  },
+                  "tax_included": {
+                    "type": "integer"
+                  },
+                  "tax_display": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "double"
+                  },
+                  "recurring": {
+                    "properties": {
+                      "recurring": {
+                        "type": "integer"
+                      },
+                      "interval": {
+                        "type": "text"
+                      },
+                      "count": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              },
+              "duration": {
+                "type": "integer"
+              },
+              "assessors": {
+                "type": "integer"
+              },
+              "allow_enrolment": {
+                "type": "integer"
+              },
+              "totalEnrolment": {
+                "type": "integer"
+              },
+              "created": {
+                "type": "date"
+              },
+              "updated": {
+                "type": "date"
+              },
+              "fields": {
+                "type": "object"
+              },
+              "event": {
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "lo_id": {
+                    "type": "integer"
+                  },
+                  "title": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "start": {
+                    "type": "date"
+                  },
+                  "end": {
+                    "type": "date"
+                  },
+                  "timezone": {
+                    "type": "keyword"
+                  },
+                  "seats": {
+                    "type": "integer"
+                  },
+                  "available_seats": {
+                    "type": "integer"
+                  },
+                  "country": {
+                    "type": "keyword"
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword"
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "sub_administrative_area": {
+                    "type": "keyword"
+                  },
+                  "locality": {
+                    "type": "keyword"
+                  },
+                  "dependent_locality": {
+                    "type": "keyword"
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "premise": {
+                    "type": "keyword"
+                  },
+                  "sub_premise": {
+                    "type": "keyword"
+                  },
+                  "organisation_name": {
+                    "type": "keyword"
+                  },
+                  "name_line": {
+                    "type": "keyword"
+                  },
+                  "postal_code": {
+                    "type": "keyword"
+                  }
+                }
+              },
+              "items_count": {
+                "type": "integer"
+              },
+              "authors": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "profile_id": {
+                    "type": "integer"
+                  },
+                  "mail": {
+                    "type": "keyword"
+                  },
+                  "name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "first_name": {
+                    "type": "keyword"
+                  },
+                  "last_name": {
+                    "type": "keyword"
+                  },
+                  "created": {
+                    "type": "date"
+                  },
+                  "login": {
+                    "type": "date"
+                  },
+                  "access": {
+                    "type": "date"
+                  },
+                  "status": {
+                    "type": "short"
+                  },
+                  "allow_public": {
+                    "type": "integer"
+                  },
+                  "avatar": {
+                    "type": "text"
+                  },
+                  "roles": {
+                    "type": "keyword"
+                  },
+                  "timestamp": {
+                    "type": "date"
+                  }
+                }
+              },
+              "group_ids": {
+                "type": "integer"
+              },
+              "data": {
+                "properties": {
+                  "allow_resubmit": {
+                    "type": "integer"
+                  },
+                  "label": {
+                    "type": "keyword"
+                  },
+                  "pass_rate": {
+                    "type": "float"
+                  },
+                  "url": {
+                    "type": "text"
+                  },
+                  "single_li": {
+                    "type": "short"
+                  }
+                }
+              },
+              "locations": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "country": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "locality": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  }
+                }
+              },
+              "vote": {
+                "properties": {
+                  "percent": {
+                    "type": "integer"
+                  },
+                  "rank": {
+                    "type": "integer"
+                  },
+                  "like": {
+                    "type": "integer"
+                  },
+                  "dislike": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "metadata": {
+                "properties": {
+                  "parents_authors_ids": {
+                    "type": "integer"
+                  },
+                  "parents_id": {
+                    "type": "integer"
+                  },
+                  "instance_id": {
+                    "type": "integer"
+                  },
+                  "membership": {
+                    "type": "integer"
+                  },
+                  "updated_at": {
+                    "type": "integer"
+                  },
+                  "shared": {
+                    "type": "short"
+                  },
+                  "shared_passive": {
+                    "type": "short"
+                  },
+                  "customized": {
+                    "type": "short"
+                  },
+                  "realm": {
+                    "type": "short"
+                  }
+                }
+              }
+            }
+          },
+          "parent_lo": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "type": {
+                "type": "keyword"
+              },
+              "title": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              }
+            }
+          },
+          "assessor": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "mail": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "first_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "last_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              }
+            }
+          },
+          "account": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "instance": {
+                "type": "keyword"
+              },
+              "mail": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "first_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "last_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "created": {
+                "type": "date"
+              },
+              "login": {
+                "type": "date"
+              },
+              "access": {
+                "type": "date"
+              },
+              "status": {
+                "type": "short"
+              },
+              "allow_public": {
+                "type": "integer"
+              },
+              "avatar": {
+                "type": "text"
+              },
+              "roles": {
+                "type": "keyword"
+              },
+              "groups": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "timestamp": {
+                "type": "date"
+              },
+              "managers": {
+                "type": "integer"
+              },
+              "metadata": {
+                "properties": {
+                  "user_id": {
+                    "type": "integer"
+                  },
+                  "instance_id": {
+                    "type": "integer"
+                  },
+                  "updated_at": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "progress": {
+            "properties": {
+              "not-started": {
+                "type": "integer"
+              },
+              "in-progress": {
+                "type": "integer"
+              },
+              "completed": {
+                "type": "integer"
+              },
+              "expired": {
+                "type": "integer"
+              },
+              "percentage": {
+                "type": "integer"
+              }
+            }
+          },
+          "certificates": {
+            "type": "nested",
+            "properties": {
+              "type": {
+                "type": "keyword"
+              },
+              "url": {
+                "type": "text"
+              },
+              "name": {
+                "type": "keyword"
+              },
+              "size": {
+                "type": "text"
+              }
+            }
+          },
+          "metadata": {
+            "properties": {
+              "account_id": {
+                "type": "integer"
+              },
+              "course_enrolment_id": {
+                "type": "integer"
+              },
+              "course_id": {
+                "type": "integer"
+              },
+              "status": {
+                "type": "short"
+              },
+              "has_assessor": {
+                "type": "short"
+              },
+              "user_id": {
+                "type": "integer"
+              },
+              "instance_id": {
+                "type": "integer"
+              },
+              "updated_at": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "dynamic_templates": [
+          {
+            "custom_field_string": {
+              "path_match": "account.fields_*.*.value_string",
+              "mapping": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "custom_field_text": {
+              "path_match": "account.fields_*.*.value_text",
+              "mapping": {
+                "type": "text"
+              }
+            }
+          },
+          {
+            "custom_field_integer": {
+              "path_match": "account.fields_*.*.value_integer",
+              "mapping": {
+                "type": "integer"
+              }
+            }
+          },
+          {
+            "custom_field_float": {
+              "path_match": "account.fields_*.*.value_float",
+              "mapping": {
+                "type": "double"
+              }
+            }
+          },
+          {
+            "custom_field_date": {
+              "path_match": "account.fields_*.*.value_date",
+              "mapping": {
+                "type": "date"
+              }
+            }
+          },
+          {
+            "custom_field_datetime": {
+              "path_match": "account.fields_*.*.value_datetime",
+              "mapping": {
+                "type": "date"
+              }
+            }
+          }
+        ]
+      },
+      "enrolment_revision": {
+        "_routing": {
+          "required": true
+        },
+        "_parent": {
+          "type": "enrolment"
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "portal_id": {
+            "type": "integer"
+          },
+          "lo_id": {
+            "type": "integer"
+          },
+          "parent_lo_id": {
+            "type": "integer"
+          },
+          "enrolment_id": {
+            "type": "integer"
+          },
+          "parent_enrolment_id": {
+            "type": "integer"
+          },
+          "start_date": {
+            "type": "date"
+          },
+          "end_date": {
+            "type": "date"
+          },
+          "status": {
+            "type": "short"
+          },
+          "result": {
+            "type": "integer"
+          },
+          "pass": {
+            "type": "integer"
+          },
+          "note": {
+            "type": "text"
+          },
+          "timestamp": {
+            "type": "date"
+          },
+          "progress": {
+            "properties": {
+              "not-started": {
+                "type": "integer"
+              },
+              "in-progress": {
+                "type": "integer"
+              },
+              "completed": {
+                "type": "integer"
+              },
+              "expired": {
+                "type": "integer"
+              },
+              "percentage": {
+                "type": "integer"
+              }
+            }
+          },
+          "metadata": {
+            "properties": {
+              "instance_id": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "asm_submission": {
+        "_parent": {
+          "type": "enrolment"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "revision_id": {
+            "type": "integer"
+          },
+          "profile_id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "short"
+          },
+          "created": {
+            "type": "date"
+          },
+          "updated": {
+            "type": "date"
+          },
+          "published": {
+            "type": "integer"
+          },
+          "assessors": {
+            "type": "integer"
+          }
+        }
+      },
+      "asm_submission_revision": {
+        "_parent": {
+          "type": "asm_submission"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "status": {
+            "type": "short"
+          },
+          "created": {
+            "type": "date"
+          },
+          "updated": {
+            "type": "date"
+          },
+          "data": {
+            "properties": {
+              "files": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "group": {
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "title": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "portal_name": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "description": {
+            "type": "text"
+          },
+          "image": {
+            "type": "text"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "visibility": {
+            "type": "short"
+          },
+          "created": {
+            "type": "date"
+          },
+          "updated": {
+            "type": "date"
+          },
+          "metadata": {
+            "properties": {
+              "instance_id": {
+                "type": "integer"
+              },
+              "updated_at": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "group_item": {
+        "_routing": {
+          "required": true
+        },
+        "_parent": {
+          "type": "group"
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "entity_type": {
+            "type": "keyword"
+          },
+          "entity_id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "short"
+          },
+          "metadata": {
+            "properties": {
+              "instance_id": {
+                "type": "integer"
+              },
+              "updated_at": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "mail": {
+        "_parent": {
+          "type": "portal"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "recipient": {
+            "type": "keyword"
+          },
+          "sender": {
+            "type": "keyword"
+          },
+          "cc": {
+            "type": "keyword"
+          },
+          "bcc": {
+            "type": "keyword"
+          },
+          "subject": {
+            "type": "keyword"
+          },
+          "body": {
+            "type": "text"
+          },
+          "html": {
+            "type": "text"
+          },
+          "context": {
+            "type": "object"
+          },
+          "options": {
+            "type": "object"
+          },
+          "attachments": {
+            "type": "object"
+          },
+          "timestamp": {
+            "type": "date"
+          }
+        }
+      },
+      "payment_transaction": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "instance_id": {
+            "type": "integer"
+          },
+          "local_id": {
+            "type": "integer"
+          },
+          "email": {
+            "type": "keyword"
+          },
+          "status": {
+            "type": "short"
+          },
+          "amount": {
+            "type": "double"
+          },
+          "currency": {
+            "type": "keyword"
+          },
+          "created": {
+            "type": "date"
+          },
+          "updated": {
+            "type": "date"
+          },
+          "payment_method": {
+            "type": "keyword"
+          },
+          "premium_purchase": {
+            "type": "integer"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "user": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "profile_id": {
+                "type": "integer"
+              },
+              "mail": {
+                "type": "keyword"
+              },
+              "name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "first_name": {
+                "type": "keyword"
+              },
+              "last_name": {
+                "type": "keyword"
+              },
+              "created": {
+                "type": "date"
+              },
+              "login": {
+                "type": "date"
+              },
+              "access": {
+                "type": "date"
+              },
+              "status": {
+                "type": "short"
+              },
+              "allow_public": {
+                "type": "integer"
+              },
+              "avatar": {
+                "type": "text"
+              },
+              "roles": {
+                "type": "keyword"
+              },
+              "timestamp": {
+                "type": "date"
+              }
+            }
+          },
+          "items": {
+            "type": "nested",
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "product_type": {
+                "type": "keyword"
+              },
+              "product_id": {
+                "type": "integer"
+              },
+              "product_title": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "product_parent_id": {
+                "type": "integer"
+              },
+              "product_parent_title": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "product_coupon_code": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "qty": {
+                "type": "integer"
+              },
+              "price": {
+                "type": "double"
+              },
+              "tax": {
+                "type": "double"
+              },
+              "tax_included": {
+                "type": "integer"
+              }
+            }
+          },
+          "credit_usage_count": {
+            "type": "integer"
+          }
+        }
+      },
+      "credit": {
+        "_routing": {
+          "required": true
+        },
+        "_parent": {
+          "type": "payment_transaction"
+        },
+        "properties": {
+          "user": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "profile_id": {
+                "type": "integer"
+              },
+              "mail": {
+                "type": "keyword"
+              },
+              "name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "first_name": {
+                "type": "keyword"
+              },
+              "last_name": {
+                "type": "keyword"
+              },
+              "created": {
+                "type": "date"
+              },
+              "login": {
+                "type": "date"
+              },
+              "access": {
+                "type": "date"
+              },
+              "status": {
+                "type": "short"
+              },
+              "allow_public": {
+                "type": "integer"
+              },
+              "avatar": {
+                "type": "text"
+              },
+              "roles": {
+                "type": "keyword"
+              },
+              "timestamp": {
+                "type": "date"
+              }
+            }
+          },
+          "lo": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "type": {
+                "type": "keyword"
+              },
+              "origin_id": {
+                "type": "integer"
+              },
+              "remote_id": {
+                "type": "keyword"
+              },
+              "status": {
+                "type": "short"
+              },
+              "private": {
+                "type": "integer"
+              },
+              "published": {
+                "type": "integer"
+              },
+              "marketplace": {
+                "type": "integer"
+              },
+              "sharing": {
+                "type": "short"
+              },
+              "instance_id": {
+                "type": "integer"
+              },
+              "portal_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "language": {
+                "type": "keyword"
+              },
+              "locale": {
+                "type": "keyword"
+              },
+              "title": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "description": {
+                "type": "text"
+              },
+              "tags": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "image": {
+                "type": "text"
+              },
+              "quantity": {
+                "type": "double"
+              },
+              "collection_id": {
+                "type": "integer"
+              },
+              "pricing": {
+                "properties": {
+                  "currency": {
+                    "type": "keyword"
+                  },
+                  "price": {
+                    "type": "double"
+                  },
+                  "tax": {
+                    "type": "double"
+                  },
+                  "tax_included": {
+                    "type": "integer"
+                  },
+                  "tax_display": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "double"
+                  },
+                  "recurring": {
+                    "properties": {
+                      "recurring": {
+                        "type": "integer"
+                      },
+                      "interval": {
+                        "type": "text"
+                      },
+                      "count": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              },
+              "duration": {
+                "type": "integer"
+              },
+              "assessors": {
+                "type": "integer"
+              },
+              "allow_enrolment": {
+                "type": "integer"
+              },
+              "totalEnrolment": {
+                "type": "integer"
+              },
+              "created": {
+                "type": "date"
+              },
+              "updated": {
+                "type": "date"
+              },
+              "fields": {
+                "type": "object"
+              },
+              "event": {
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "lo_id": {
+                    "type": "integer"
+                  },
+                  "title": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "start": {
+                    "type": "date"
+                  },
+                  "end": {
+                    "type": "date"
+                  },
+                  "timezone": {
+                    "type": "keyword"
+                  },
+                  "seats": {
+                    "type": "integer"
+                  },
+                  "available_seats": {
+                    "type": "integer"
+                  },
+                  "country": {
+                    "type": "keyword"
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword"
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "sub_administrative_area": {
+                    "type": "keyword"
+                  },
+                  "locality": {
+                    "type": "keyword"
+                  },
+                  "dependent_locality": {
+                    "type": "keyword"
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "premise": {
+                    "type": "keyword"
+                  },
+                  "sub_premise": {
+                    "type": "keyword"
+                  },
+                  "organisation_name": {
+                    "type": "keyword"
+                  },
+                  "name_line": {
+                    "type": "keyword"
+                  },
+                  "postal_code": {
+                    "type": "keyword"
+                  }
+                }
+              },
+              "items_count": {
+                "type": "integer"
+              },
+              "authors": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "profile_id": {
+                    "type": "integer"
+                  },
+                  "mail": {
+                    "type": "keyword"
+                  },
+                  "name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "first_name": {
+                    "type": "keyword"
+                  },
+                  "last_name": {
+                    "type": "keyword"
+                  },
+                  "created": {
+                    "type": "date"
+                  },
+                  "login": {
+                    "type": "date"
+                  },
+                  "access": {
+                    "type": "date"
+                  },
+                  "status": {
+                    "type": "short"
+                  },
+                  "allow_public": {
+                    "type": "integer"
+                  },
+                  "avatar": {
+                    "type": "text"
+                  },
+                  "roles": {
+                    "type": "keyword"
+                  },
+                  "timestamp": {
+                    "type": "date"
+                  }
+                }
+              },
+              "group_ids": {
+                "type": "integer"
+              },
+              "data": {
+                "properties": {
+                  "allow_resubmit": {
+                    "type": "integer"
+                  },
+                  "label": {
+                    "type": "keyword"
+                  },
+                  "pass_rate": {
+                    "type": "float"
+                  },
+                  "url": {
+                    "type": "text"
+                  },
+                  "single_li": {
+                    "type": "short"
+                  }
+                }
+              },
+              "locations": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "country": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "locality": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  }
+                }
+              },
+              "vote": {
+                "properties": {
+                  "percent": {
+                    "type": "integer"
+                  },
+                  "rank": {
+                    "type": "integer"
+                  },
+                  "like": {
+                    "type": "integer"
+                  },
+                  "dislike": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "metadata": {
+                "properties": {
+                  "parents_authors_ids": {
+                    "type": "integer"
+                  },
+                  "parents_id": {
+                    "type": "integer"
+                  },
+                  "instance_id": {
+                    "type": "integer"
+                  },
+                  "membership": {
+                    "type": "integer"
+                  },
+                  "updated_at": {
+                    "type": "integer"
+                  },
+                  "shared": {
+                    "type": "short"
+                  },
+                  "shared_passive": {
+                    "type": "short"
+                  },
+                  "customized": {
+                    "type": "short"
+                  },
+                  "realm": {
+                    "type": "short"
+                  }
+                }
+              }
+            }
+          },
+          "portal_id": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "used": {
+            "type": "integer"
+          },
+          "remaining": {
+            "type": "integer"
+          },
+          "metadata": {
+            "properties": {
+              "user_id": {
+                "type": "integer"
+              },
+              "lo_id": {
+                "type": "integer"
+              },
+              "instance_id": {
+                "type": "integer"
+              },
+              "updated_at": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "quiz_user_answer": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "question_type": {
+            "type": "keyword"
+          },
+          "answer": {
+            "type": "text"
+          },
+          "created": {
+            "type": "date"
+          },
+          "updated": {
+            "type": "date"
+          },
+          "is_correct": {
+            "type": "integer"
+          },
+          "is_skipped": {
+            "type": "integer"
+          },
+          "is_evaluated": {
+            "type": "integer"
+          },
+          "points": {
+            "type": "integer"
+          },
+          "question": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "counter": {
+            "type": "integer"
+          },
+          "user": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "profile_id": {
+                "type": "integer"
+              },
+              "mail": {
+                "type": "keyword"
+              },
+              "name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "first_name": {
+                "type": "keyword"
+              },
+              "last_name": {
+                "type": "keyword"
+              },
+              "created": {
+                "type": "date"
+              },
+              "login": {
+                "type": "date"
+              },
+              "access": {
+                "type": "date"
+              },
+              "status": {
+                "type": "short"
+              },
+              "allow_public": {
+                "type": "integer"
+              },
+              "avatar": {
+                "type": "text"
+              },
+              "roles": {
+                "type": "keyword"
+              },
+              "timestamp": {
+                "type": "date"
+              }
+            }
+          },
+          "li": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "type": {
+                "type": "keyword"
+              },
+              "origin_id": {
+                "type": "integer"
+              },
+              "remote_id": {
+                "type": "keyword"
+              },
+              "status": {
+                "type": "short"
+              },
+              "private": {
+                "type": "integer"
+              },
+              "published": {
+                "type": "integer"
+              },
+              "marketplace": {
+                "type": "integer"
+              },
+              "sharing": {
+                "type": "short"
+              },
+              "instance_id": {
+                "type": "integer"
+              },
+              "portal_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "language": {
+                "type": "keyword"
+              },
+              "locale": {
+                "type": "keyword"
+              },
+              "title": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "description": {
+                "type": "text"
+              },
+              "tags": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "image": {
+                "type": "text"
+              },
+              "quantity": {
+                "type": "double"
+              },
+              "collection_id": {
+                "type": "integer"
+              },
+              "pricing": {
+                "properties": {
+                  "currency": {
+                    "type": "keyword"
+                  },
+                  "price": {
+                    "type": "double"
+                  },
+                  "tax": {
+                    "type": "double"
+                  },
+                  "tax_included": {
+                    "type": "integer"
+                  },
+                  "tax_display": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "double"
+                  },
+                  "recurring": {
+                    "properties": {
+                      "recurring": {
+                        "type": "integer"
+                      },
+                      "interval": {
+                        "type": "text"
+                      },
+                      "count": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              },
+              "duration": {
+                "type": "integer"
+              },
+              "assessors": {
+                "type": "integer"
+              },
+              "allow_enrolment": {
+                "type": "integer"
+              },
+              "totalEnrolment": {
+                "type": "integer"
+              },
+              "created": {
+                "type": "date"
+              },
+              "updated": {
+                "type": "date"
+              },
+              "fields": {
+                "type": "object"
+              },
+              "event": {
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "lo_id": {
+                    "type": "integer"
+                  },
+                  "title": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "start": {
+                    "type": "date"
+                  },
+                  "end": {
+                    "type": "date"
+                  },
+                  "timezone": {
+                    "type": "keyword"
+                  },
+                  "seats": {
+                    "type": "integer"
+                  },
+                  "available_seats": {
+                    "type": "integer"
+                  },
+                  "country": {
+                    "type": "keyword"
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword"
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "sub_administrative_area": {
+                    "type": "keyword"
+                  },
+                  "locality": {
+                    "type": "keyword"
+                  },
+                  "dependent_locality": {
+                    "type": "keyword"
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "premise": {
+                    "type": "keyword"
+                  },
+                  "sub_premise": {
+                    "type": "keyword"
+                  },
+                  "organisation_name": {
+                    "type": "keyword"
+                  },
+                  "name_line": {
+                    "type": "keyword"
+                  },
+                  "postal_code": {
+                    "type": "keyword"
+                  }
+                }
+              },
+              "items_count": {
+                "type": "integer"
+              },
+              "authors": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "profile_id": {
+                    "type": "integer"
+                  },
+                  "mail": {
+                    "type": "keyword"
+                  },
+                  "name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "first_name": {
+                    "type": "keyword"
+                  },
+                  "last_name": {
+                    "type": "keyword"
+                  },
+                  "created": {
+                    "type": "date"
+                  },
+                  "login": {
+                    "type": "date"
+                  },
+                  "access": {
+                    "type": "date"
+                  },
+                  "status": {
+                    "type": "short"
+                  },
+                  "allow_public": {
+                    "type": "integer"
+                  },
+                  "avatar": {
+                    "type": "text"
+                  },
+                  "roles": {
+                    "type": "keyword"
+                  },
+                  "timestamp": {
+                    "type": "date"
+                  }
+                }
+              },
+              "group_ids": {
+                "type": "integer"
+              },
+              "data": {
+                "properties": {
+                  "allow_resubmit": {
+                    "type": "integer"
+                  },
+                  "label": {
+                    "type": "keyword"
+                  },
+                  "pass_rate": {
+                    "type": "float"
+                  },
+                  "url": {
+                    "type": "text"
+                  },
+                  "single_li": {
+                    "type": "short"
+                  }
+                }
+              },
+              "locations": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "country": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "locality": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  }
+                }
+              },
+              "vote": {
+                "properties": {
+                  "percent": {
+                    "type": "integer"
+                  },
+                  "rank": {
+                    "type": "integer"
+                  },
+                  "like": {
+                    "type": "integer"
+                  },
+                  "dislike": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "metadata": {
+                "properties": {
+                  "parents_authors_ids": {
+                    "type": "integer"
+                  },
+                  "parents_id": {
+                    "type": "integer"
+                  },
+                  "instance_id": {
+                    "type": "integer"
+                  },
+                  "membership": {
+                    "type": "integer"
+                  },
+                  "updated_at": {
+                    "type": "integer"
+                  },
+                  "shared": {
+                    "type": "short"
+                  },
+                  "shared_passive": {
+                    "type": "short"
+                  },
+                  "customized": {
+                    "type": "short"
+                  },
+                  "realm": {
+                    "type": "short"
+                  }
+                }
+              }
+            }
+          },
+          "course": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "type": {
+                "type": "keyword"
+              },
+              "origin_id": {
+                "type": "integer"
+              },
+              "remote_id": {
+                "type": "keyword"
+              },
+              "status": {
+                "type": "short"
+              },
+              "private": {
+                "type": "integer"
+              },
+              "published": {
+                "type": "integer"
+              },
+              "marketplace": {
+                "type": "integer"
+              },
+              "sharing": {
+                "type": "short"
+              },
+              "instance_id": {
+                "type": "integer"
+              },
+              "portal_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "language": {
+                "type": "keyword"
+              },
+              "locale": {
+                "type": "keyword"
+              },
+              "title": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "description": {
+                "type": "text"
+              },
+              "tags": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "image": {
+                "type": "text"
+              },
+              "quantity": {
+                "type": "double"
+              },
+              "collection_id": {
+                "type": "integer"
+              },
+              "pricing": {
+                "properties": {
+                  "currency": {
+                    "type": "keyword"
+                  },
+                  "price": {
+                    "type": "double"
+                  },
+                  "tax": {
+                    "type": "double"
+                  },
+                  "tax_included": {
+                    "type": "integer"
+                  },
+                  "tax_display": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "double"
+                  },
+                  "recurring": {
+                    "properties": {
+                      "recurring": {
+                        "type": "integer"
+                      },
+                      "interval": {
+                        "type": "text"
+                      },
+                      "count": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              },
+              "duration": {
+                "type": "integer"
+              },
+              "assessors": {
+                "type": "integer"
+              },
+              "allow_enrolment": {
+                "type": "integer"
+              },
+              "totalEnrolment": {
+                "type": "integer"
+              },
+              "created": {
+                "type": "date"
+              },
+              "updated": {
+                "type": "date"
+              },
+              "fields": {
+                "type": "object"
+              },
+              "event": {
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "lo_id": {
+                    "type": "integer"
+                  },
+                  "title": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "start": {
+                    "type": "date"
+                  },
+                  "end": {
+                    "type": "date"
+                  },
+                  "timezone": {
+                    "type": "keyword"
+                  },
+                  "seats": {
+                    "type": "integer"
+                  },
+                  "available_seats": {
+                    "type": "integer"
+                  },
+                  "country": {
+                    "type": "keyword"
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword"
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "sub_administrative_area": {
+                    "type": "keyword"
+                  },
+                  "locality": {
+                    "type": "keyword"
+                  },
+                  "dependent_locality": {
+                    "type": "keyword"
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "premise": {
+                    "type": "keyword"
+                  },
+                  "sub_premise": {
+                    "type": "keyword"
+                  },
+                  "organisation_name": {
+                    "type": "keyword"
+                  },
+                  "name_line": {
+                    "type": "keyword"
+                  },
+                  "postal_code": {
+                    "type": "keyword"
+                  }
+                }
+              },
+              "items_count": {
+                "type": "integer"
+              },
+              "authors": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "profile_id": {
+                    "type": "integer"
+                  },
+                  "mail": {
+                    "type": "keyword"
+                  },
+                  "name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "first_name": {
+                    "type": "keyword"
+                  },
+                  "last_name": {
+                    "type": "keyword"
+                  },
+                  "created": {
+                    "type": "date"
+                  },
+                  "login": {
+                    "type": "date"
+                  },
+                  "access": {
+                    "type": "date"
+                  },
+                  "status": {
+                    "type": "short"
+                  },
+                  "allow_public": {
+                    "type": "integer"
+                  },
+                  "avatar": {
+                    "type": "text"
+                  },
+                  "roles": {
+                    "type": "keyword"
+                  },
+                  "timestamp": {
+                    "type": "date"
+                  }
+                }
+              },
+              "group_ids": {
+                "type": "integer"
+              },
+              "data": {
+                "properties": {
+                  "allow_resubmit": {
+                    "type": "integer"
+                  },
+                  "label": {
+                    "type": "keyword"
+                  },
+                  "pass_rate": {
+                    "type": "float"
+                  },
+                  "url": {
+                    "type": "text"
+                  },
+                  "single_li": {
+                    "type": "short"
+                  }
+                }
+              },
+              "locations": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "country": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "locality": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  }
+                }
+              },
+              "vote": {
+                "properties": {
+                  "percent": {
+                    "type": "integer"
+                  },
+                  "rank": {
+                    "type": "integer"
+                  },
+                  "like": {
+                    "type": "integer"
+                  },
+                  "dislike": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "metadata": {
+                "properties": {
+                  "parents_authors_ids": {
+                    "type": "integer"
+                  },
+                  "parents_id": {
+                    "type": "integer"
+                  },
+                  "instance_id": {
+                    "type": "integer"
+                  },
+                  "membership": {
+                    "type": "integer"
+                  },
+                  "updated_at": {
+                    "type": "integer"
+                  },
+                  "shared": {
+                    "type": "short"
+                  },
+                  "shared_passive": {
+                    "type": "short"
+                  },
+                  "customized": {
+                    "type": "short"
+                  },
+                  "realm": {
+                    "type": "short"
+                  }
+                }
+              }
+            }
+          },
+          "metadata": {
+            "properties": {
+              "li_id": {
+                "type": "integer"
+              },
+              "course_id": {
+                "type": "integer"
+              },
+              "user_id": {
+                "type": "integer"
+              }
+            }
+          },
+          "title": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          }
+        }
+      },
+      "purchase_request": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "user": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "profile_id": {
+                "type": "integer"
+              },
+              "mail": {
+                "type": "keyword"
+              },
+              "name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "first_name": {
+                "type": "keyword"
+              },
+              "last_name": {
+                "type": "keyword"
+              },
+              "created": {
+                "type": "date"
+              },
+              "login": {
+                "type": "date"
+              },
+              "access": {
+                "type": "date"
+              },
+              "status": {
+                "type": "short"
+              },
+              "allow_public": {
+                "type": "integer"
+              },
+              "avatar": {
+                "type": "text"
+              },
+              "roles": {
+                "type": "keyword"
+              },
+              "timestamp": {
+                "type": "date"
+              }
+            }
+          },
+          "manager": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "profile_id": {
+                "type": "integer"
+              },
+              "mail": {
+                "type": "keyword"
+              },
+              "name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "first_name": {
+                "type": "keyword"
+              },
+              "last_name": {
+                "type": "keyword"
+              },
+              "created": {
+                "type": "date"
+              },
+              "login": {
+                "type": "date"
+              },
+              "access": {
+                "type": "date"
+              },
+              "status": {
+                "type": "short"
+              },
+              "allow_public": {
+                "type": "integer"
+              },
+              "avatar": {
+                "type": "text"
+              },
+              "roles": {
+                "type": "keyword"
+              },
+              "timestamp": {
+                "type": "date"
+              }
+            }
+          },
+          "lo": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "type": {
+                "type": "keyword"
+              },
+              "origin_id": {
+                "type": "integer"
+              },
+              "remote_id": {
+                "type": "keyword"
+              },
+              "status": {
+                "type": "short"
+              },
+              "private": {
+                "type": "integer"
+              },
+              "published": {
+                "type": "integer"
+              },
+              "marketplace": {
+                "type": "integer"
+              },
+              "sharing": {
+                "type": "short"
+              },
+              "instance_id": {
+                "type": "integer"
+              },
+              "portal_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "language": {
+                "type": "keyword"
+              },
+              "locale": {
+                "type": "keyword"
+              },
+              "title": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "description": {
+                "type": "text"
+              },
+              "tags": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "image": {
+                "type": "text"
+              },
+              "quantity": {
+                "type": "double"
+              },
+              "collection_id": {
+                "type": "integer"
+              },
+              "pricing": {
+                "properties": {
+                  "currency": {
+                    "type": "keyword"
+                  },
+                  "price": {
+                    "type": "double"
+                  },
+                  "tax": {
+                    "type": "double"
+                  },
+                  "tax_included": {
+                    "type": "integer"
+                  },
+                  "tax_display": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "double"
+                  },
+                  "recurring": {
+                    "properties": {
+                      "recurring": {
+                        "type": "integer"
+                      },
+                      "interval": {
+                        "type": "text"
+                      },
+                      "count": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              },
+              "duration": {
+                "type": "integer"
+              },
+              "assessors": {
+                "type": "integer"
+              },
+              "allow_enrolment": {
+                "type": "integer"
+              },
+              "totalEnrolment": {
+                "type": "integer"
+              },
+              "created": {
+                "type": "date"
+              },
+              "updated": {
+                "type": "date"
+              },
+              "fields": {
+                "type": "object"
+              },
+              "event": {
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "lo_id": {
+                    "type": "integer"
+                  },
+                  "title": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "start": {
+                    "type": "date"
+                  },
+                  "end": {
+                    "type": "date"
+                  },
+                  "timezone": {
+                    "type": "keyword"
+                  },
+                  "seats": {
+                    "type": "integer"
+                  },
+                  "available_seats": {
+                    "type": "integer"
+                  },
+                  "country": {
+                    "type": "keyword"
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword"
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "sub_administrative_area": {
+                    "type": "keyword"
+                  },
+                  "locality": {
+                    "type": "keyword"
+                  },
+                  "dependent_locality": {
+                    "type": "keyword"
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "premise": {
+                    "type": "keyword"
+                  },
+                  "sub_premise": {
+                    "type": "keyword"
+                  },
+                  "organisation_name": {
+                    "type": "keyword"
+                  },
+                  "name_line": {
+                    "type": "keyword"
+                  },
+                  "postal_code": {
+                    "type": "keyword"
+                  }
+                }
+              },
+              "items_count": {
+                "type": "integer"
+              },
+              "authors": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "profile_id": {
+                    "type": "integer"
+                  },
+                  "mail": {
+                    "type": "keyword"
+                  },
+                  "name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "first_name": {
+                    "type": "keyword"
+                  },
+                  "last_name": {
+                    "type": "keyword"
+                  },
+                  "created": {
+                    "type": "date"
+                  },
+                  "login": {
+                    "type": "date"
+                  },
+                  "access": {
+                    "type": "date"
+                  },
+                  "status": {
+                    "type": "short"
+                  },
+                  "allow_public": {
+                    "type": "integer"
+                  },
+                  "avatar": {
+                    "type": "text"
+                  },
+                  "roles": {
+                    "type": "keyword"
+                  },
+                  "timestamp": {
+                    "type": "date"
+                  }
+                }
+              },
+              "group_ids": {
+                "type": "integer"
+              },
+              "data": {
+                "properties": {
+                  "allow_resubmit": {
+                    "type": "integer"
+                  },
+                  "label": {
+                    "type": "keyword"
+                  },
+                  "pass_rate": {
+                    "type": "float"
+                  },
+                  "url": {
+                    "type": "text"
+                  },
+                  "single_li": {
+                    "type": "short"
+                  }
+                }
+              },
+              "locations": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "country": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "locality": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  }
+                }
+              },
+              "vote": {
+                "properties": {
+                  "percent": {
+                    "type": "integer"
+                  },
+                  "rank": {
+                    "type": "integer"
+                  },
+                  "like": {
+                    "type": "integer"
+                  },
+                  "dislike": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "metadata": {
+                "properties": {
+                  "parents_authors_ids": {
+                    "type": "integer"
+                  },
+                  "parents_id": {
+                    "type": "integer"
+                  },
+                  "instance_id": {
+                    "type": "integer"
+                  },
+                  "membership": {
+                    "type": "integer"
+                  },
+                  "updated_at": {
+                    "type": "integer"
+                  },
+                  "shared": {
+                    "type": "short"
+                  },
+                  "shared_passive": {
+                    "type": "short"
+                  },
+                  "customized": {
+                    "type": "short"
+                  },
+                  "realm": {
+                    "type": "short"
+                  }
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "short"
+          },
+          "request_date": {
+            "type": "text"
+          },
+          "response_date": {
+            "type": "text"
+          },
+          "approve_url": {
+            "type": "text"
+          },
+          "reject_url": {
+            "type": "text"
+          },
+          "metadata": {
+            "properties": {
+              "user_id": {
+                "type": "integer"
+              },
+              "manager_id": {
+                "type": "integer"
+              },
+              "lo_id": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "eck_metadata": {
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "instance": {
+            "type": "keyword"
+          },
+          "entity_type": {
+            "type": "keyword"
+          },
+          "field": {
+            "type": "nested",
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "name": {
+                "type": "keyword"
+              },
+              "description": {
+                "type": "text"
+              },
+              "label": {
+                "type": "keyword"
+              },
+              "help": {
+                "type": "keyword"
+              },
+              "type": {
+                "type": "keyword"
+              },
+              "published": {
+                "type": "integer"
+              },
+              "weight": {
+                "type": "integer"
+              },
+              "max_rows": {
+                "type": "integer"
+              },
+              "parent_field": {
+                "type": "keyword"
+              },
+              "data": {
+                "type": "object"
+              },
+              "metadata": {
+                "properties": {
+                  "instance_id": {
+                    "type": "integer"
+                  },
+                  "updated_at": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "coupon": {
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "title": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "code": {
+            "type": "keyword"
+          },
+          "instance_id": {
+            "type": "integer"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "coupon_type": {
+            "type": "short"
+          },
+          "coupon_value": {
+            "type": "double"
+          },
+          "status": {
+            "type": "short"
+          },
+          "limitation": {
+            "type": "short"
+          },
+          "expiration": {
+            "type": "date"
+          },
+          "created": {
+            "type": "date"
+          },
+          "updated": {
+            "type": "date"
+          },
+          "usage_count": {
+            "type": "integer"
+          },
+          "usage": {
+            "type": "nested",
+            "properties": {
+              "user_id": {
+                "type": "integer"
+              },
+              "transaction_id": {
+                "type": "integer"
+              },
+              "created": {
+                "type": "date"
+              }
+            }
+          },
+          "items": {
+            "type": "nested",
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "type": {
+                "type": "keyword"
+              },
+              "origin_id": {
+                "type": "integer"
+              },
+              "remote_id": {
+                "type": "keyword"
+              },
+              "status": {
+                "type": "short"
+              },
+              "private": {
+                "type": "integer"
+              },
+              "published": {
+                "type": "integer"
+              },
+              "marketplace": {
+                "type": "integer"
+              },
+              "sharing": {
+                "type": "short"
+              },
+              "instance_id": {
+                "type": "integer"
+              },
+              "portal_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "language": {
+                "type": "keyword"
+              },
+              "locale": {
+                "type": "keyword"
+              },
+              "title": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "description": {
+                "type": "text"
+              },
+              "tags": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "image": {
+                "type": "text"
+              },
+              "quantity": {
+                "type": "double"
+              },
+              "collection_id": {
+                "type": "integer"
+              },
+              "pricing": {
+                "properties": {
+                  "currency": {
+                    "type": "keyword"
+                  },
+                  "price": {
+                    "type": "double"
+                  },
+                  "tax": {
+                    "type": "double"
+                  },
+                  "tax_included": {
+                    "type": "integer"
+                  },
+                  "tax_display": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "double"
+                  },
+                  "recurring": {
+                    "properties": {
+                      "recurring": {
+                        "type": "integer"
+                      },
+                      "interval": {
+                        "type": "text"
+                      },
+                      "count": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              },
+              "duration": {
+                "type": "integer"
+              },
+              "assessors": {
+                "type": "integer"
+              },
+              "allow_enrolment": {
+                "type": "integer"
+              },
+              "totalEnrolment": {
+                "type": "integer"
+              },
+              "created": {
+                "type": "date"
+              },
+              "updated": {
+                "type": "date"
+              },
+              "fields": {
+                "type": "object"
+              },
+              "event": {
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "lo_id": {
+                    "type": "integer"
+                  },
+                  "title": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "start": {
+                    "type": "date"
+                  },
+                  "end": {
+                    "type": "date"
+                  },
+                  "timezone": {
+                    "type": "keyword"
+                  },
+                  "seats": {
+                    "type": "integer"
+                  },
+                  "available_seats": {
+                    "type": "integer"
+                  },
+                  "country": {
+                    "type": "keyword"
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword"
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "sub_administrative_area": {
+                    "type": "keyword"
+                  },
+                  "locality": {
+                    "type": "keyword"
+                  },
+                  "dependent_locality": {
+                    "type": "keyword"
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "premise": {
+                    "type": "keyword"
+                  },
+                  "sub_premise": {
+                    "type": "keyword"
+                  },
+                  "organisation_name": {
+                    "type": "keyword"
+                  },
+                  "name_line": {
+                    "type": "keyword"
+                  },
+                  "postal_code": {
+                    "type": "keyword"
+                  }
+                }
+              },
+              "items_count": {
+                "type": "integer"
+              },
+              "authors": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "profile_id": {
+                    "type": "integer"
+                  },
+                  "mail": {
+                    "type": "keyword"
+                  },
+                  "name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "first_name": {
+                    "type": "keyword"
+                  },
+                  "last_name": {
+                    "type": "keyword"
+                  },
+                  "created": {
+                    "type": "date"
+                  },
+                  "login": {
+                    "type": "date"
+                  },
+                  "access": {
+                    "type": "date"
+                  },
+                  "status": {
+                    "type": "short"
+                  },
+                  "allow_public": {
+                    "type": "integer"
+                  },
+                  "avatar": {
+                    "type": "text"
+                  },
+                  "roles": {
+                    "type": "keyword"
+                  },
+                  "timestamp": {
+                    "type": "date"
+                  }
+                }
+              },
+              "group_ids": {
+                "type": "integer"
+              },
+              "data": {
+                "properties": {
+                  "allow_resubmit": {
+                    "type": "integer"
+                  },
+                  "label": {
+                    "type": "keyword"
+                  },
+                  "pass_rate": {
+                    "type": "float"
+                  },
+                  "url": {
+                    "type": "text"
+                  },
+                  "single_li": {
+                    "type": "short"
+                  }
+                }
+              },
+              "locations": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "country": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "locality": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  }
+                }
+              },
+              "vote": {
+                "properties": {
+                  "percent": {
+                    "type": "integer"
+                  },
+                  "rank": {
+                    "type": "integer"
+                  },
+                  "like": {
+                    "type": "integer"
+                  },
+                  "dislike": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "metadata": {
+                "properties": {
+                  "parents_authors_ids": {
+                    "type": "integer"
+                  },
+                  "parents_id": {
+                    "type": "integer"
+                  },
+                  "instance_id": {
+                    "type": "integer"
+                  },
+                  "membership": {
+                    "type": "integer"
+                  },
+                  "updated_at": {
+                    "type": "integer"
+                  },
+                  "shared": {
+                    "type": "short"
+                  },
+                  "shared_passive": {
+                    "type": "short"
+                  },
+                  "customized": {
+                    "type": "short"
+                  },
+                  "realm": {
+                    "type": "short"
+                  }
+                }
+              }
+            }
+          },
+          "metadata": {
+            "properties": {
+              "instance_id": {
+                "type": "integer"
+              },
+              "updated_at": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "event": {
+        "_routing": {
+          "required": true
+        },
+        "_parent": {
+          "type": "lo"
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "lo_id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "start": {
+            "type": "date"
+          },
+          "end": {
+            "type": "date"
+          },
+          "timezone": {
+            "type": "keyword"
+          },
+          "seats": {
+            "type": "integer"
+          },
+          "available_seats": {
+            "type": "integer"
+          },
+          "country": {
+            "type": "keyword"
+          },
+          "country_name": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "administrative_area": {
+            "type": "keyword"
+          },
+          "administrative_area_name": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "sub_administrative_area": {
+            "type": "keyword"
+          },
+          "locality": {
+            "type": "keyword"
+          },
+          "dependent_locality": {
+            "type": "keyword"
+          },
+          "thoroughfare": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "premise": {
+            "type": "keyword"
+          },
+          "sub_premise": {
+            "type": "keyword"
+          },
+          "organisation_name": {
+            "type": "keyword"
+          },
+          "name_line": {
+            "type": "keyword"
+          },
+          "postal_code": {
+            "type": "keyword"
+          },
+          "parent": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "type": {
+                "type": "keyword"
+              },
+              "origin_id": {
+                "type": "integer"
+              },
+              "remote_id": {
+                "type": "keyword"
+              },
+              "status": {
+                "type": "short"
+              },
+              "private": {
+                "type": "integer"
+              },
+              "published": {
+                "type": "integer"
+              },
+              "marketplace": {
+                "type": "integer"
+              },
+              "sharing": {
+                "type": "short"
+              },
+              "instance_id": {
+                "type": "integer"
+              },
+              "portal_name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "language": {
+                "type": "keyword"
+              },
+              "locale": {
+                "type": "keyword"
+              },
+              "title": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "description": {
+                "type": "text"
+              },
+              "tags": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "image": {
+                "type": "text"
+              },
+              "quantity": {
+                "type": "double"
+              },
+              "collection_id": {
+                "type": "integer"
+              },
+              "pricing": {
+                "properties": {
+                  "currency": {
+                    "type": "keyword"
+                  },
+                  "price": {
+                    "type": "double"
+                  },
+                  "tax": {
+                    "type": "double"
+                  },
+                  "tax_included": {
+                    "type": "integer"
+                  },
+                  "tax_display": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "double"
+                  },
+                  "recurring": {
+                    "properties": {
+                      "recurring": {
+                        "type": "integer"
+                      },
+                      "interval": {
+                        "type": "text"
+                      },
+                      "count": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              },
+              "duration": {
+                "type": "integer"
+              },
+              "assessors": {
+                "type": "integer"
+              },
+              "allow_enrolment": {
+                "type": "integer"
+              },
+              "totalEnrolment": {
+                "type": "integer"
+              },
+              "created": {
+                "type": "date"
+              },
+              "updated": {
+                "type": "date"
+              },
+              "fields": {
+                "type": "object"
+              },
+              "event": {
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "lo_id": {
+                    "type": "integer"
+                  },
+                  "title": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "start": {
+                    "type": "date"
+                  },
+                  "end": {
+                    "type": "date"
+                  },
+                  "timezone": {
+                    "type": "keyword"
+                  },
+                  "seats": {
+                    "type": "integer"
+                  },
+                  "available_seats": {
+                    "type": "integer"
+                  },
+                  "country": {
+                    "type": "keyword"
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword"
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "sub_administrative_area": {
+                    "type": "keyword"
+                  },
+                  "locality": {
+                    "type": "keyword"
+                  },
+                  "dependent_locality": {
+                    "type": "keyword"
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "premise": {
+                    "type": "keyword"
+                  },
+                  "sub_premise": {
+                    "type": "keyword"
+                  },
+                  "organisation_name": {
+                    "type": "keyword"
+                  },
+                  "name_line": {
+                    "type": "keyword"
+                  },
+                  "postal_code": {
+                    "type": "keyword"
+                  }
+                }
+              },
+              "items_count": {
+                "type": "integer"
+              },
+              "authors": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "profile_id": {
+                    "type": "integer"
+                  },
+                  "mail": {
+                    "type": "keyword"
+                  },
+                  "name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "first_name": {
+                    "type": "keyword"
+                  },
+                  "last_name": {
+                    "type": "keyword"
+                  },
+                  "created": {
+                    "type": "date"
+                  },
+                  "login": {
+                    "type": "date"
+                  },
+                  "access": {
+                    "type": "date"
+                  },
+                  "status": {
+                    "type": "short"
+                  },
+                  "allow_public": {
+                    "type": "integer"
+                  },
+                  "avatar": {
+                    "type": "text"
+                  },
+                  "roles": {
+                    "type": "keyword"
+                  },
+                  "timestamp": {
+                    "type": "date"
+                  }
+                }
+              },
+              "group_ids": {
+                "type": "integer"
+              },
+              "data": {
+                "properties": {
+                  "allow_resubmit": {
+                    "type": "integer"
+                  },
+                  "label": {
+                    "type": "keyword"
+                  },
+                  "pass_rate": {
+                    "type": "float"
+                  },
+                  "url": {
+                    "type": "text"
+                  },
+                  "single_li": {
+                    "type": "short"
+                  }
+                }
+              },
+              "locations": {
+                "type": "nested",
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "country": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "country_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "administrative_area_name": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "locality": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "thoroughfare": {
+                    "type": "keyword",
+                    "fields": {
+                      "analyzed": {
+                        "type": "text"
+                      }
+                    }
+                  }
+                }
+              },
+              "vote": {
+                "properties": {
+                  "percent": {
+                    "type": "integer"
+                  },
+                  "rank": {
+                    "type": "integer"
+                  },
+                  "like": {
+                    "type": "integer"
+                  },
+                  "dislike": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "metadata": {
+                "properties": {
+                  "parents_authors_ids": {
+                    "type": "integer"
+                  },
+                  "parents_id": {
+                    "type": "integer"
+                  },
+                  "instance_id": {
+                    "type": "integer"
+                  },
+                  "membership": {
+                    "type": "integer"
+                  },
+                  "updated_at": {
+                    "type": "integer"
+                  },
+                  "shared": {
+                    "type": "short"
+                  },
+                  "shared_passive": {
+                    "type": "short"
+                  },
+                  "customized": {
+                    "type": "short"
+                  },
+                  "realm": {
+                    "type": "short"
+                  }
+                }
+              }
+            }
+          },
+          "metadata": {
+            "properties": {
+              "instance_id": {
+                "type": "integer"
+              },
+              "updated_at": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "award": {
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "revision_id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "keyword"
+          },
+          "description": {
+            "type": "text"
+          },
+          "image": {
+            "type": "text"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "instance_id": {
+            "type": "integer"
+          },
+          "published": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": "double"
+          },
+          "expire": {
+            "type": "keyword"
+          },
+          "created": {
+            "type": "date"
+          },
+          "items_count": {
+            "type": "integer"
+          },
+          "tags": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "locale": {
+            "type": "keyword"
+          },
+          "metadata": {
+            "properties": {
+              "instance_id": {
+                "type": "integer"
+              },
+              "updated_at": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "award_item": {
+        "_parent": {
+          "type": "award"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "entity_id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "description": {
+            "type": "text"
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "quantity": {
+            "type": "double"
+          },
+          "weight": {
+            "type": "integer"
+          },
+          "metadata": {
+            "properties": {
+              "award_revision_id": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "award_item_manual": {
+        "_parent": {
+          "type": "award"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "entity_id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "description": {
+            "type": "text"
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "quantity": {
+            "type": "double"
+          },
+          "completion_date": {
+            "type": "date"
+          },
+          "certificate": {
+            "type": "object"
+          },
+          "verified": {
+            "type": "integer"
+          },
+          "pass": {
+            "type": "integer"
+          },
+          "weight": {
+            "type": "integer"
+          },
+          "categories": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          }
+        }
+      },
+      "award_achievement": {
+        "_parent": {
+          "type": "award_enrolment"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "award_item_id": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": "double"
+          },
+          "created": {
+            "type": "date"
+          }
+        }
+      },
+      "account_enrolment": {
+        "_parent": {
+          "type": "account"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "lo_id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "metadata": {
+            "properties": {
+              "instance_id": {
+                "type": "integer"
+              },
+              "updated_at": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "suggestion_category": {
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "category": {
+            "type": "completion",
+            "analyzer": "whitespace",
+            "preserve_separators": true,
+            "preserve_position_increments": true,
+            "max_input_length": 50,
+            "contexts": [
+              {
+                "name": "instance_id",
+                "type": "CATEGORY"
+              }
+            ]
+          },
+          "metadata": {
+            "properties": {
+              "instance_id": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "suggestion_tag": {
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "tag": {
+            "type": "completion",
+            "analyzer": "whitespace",
+            "preserve_separators": true,
+            "preserve_position_increments": true,
+            "max_input_length": 50,
+            "contexts": [
+              {
+                "name": "instance_id",
+                "type": "CATEGORY"
+              }
+            ]
+          },
+          "metadata": {
+            "properties": {
+              "instance_id": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "myteam_progress": {
+        "properties": {
+          "accessor_id": {
+            "type": "integer"
+          },
+          "account": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "mail": {
+                "type": "keyword"
+              },
+              "first_name": {
+                "type": "keyword"
+              },
+              "last_name": {
+                "type": "keyword"
+              },
+              "avatar": {
+                "type": "text"
+              },
+              "status": {
+                "type": "short"
+              }
+            }
+          },
+          "role": {
+            "type": "integer"
+          },
+          "count_enrolment": {
+            "type": "integer"
+          },
+          "count_upcoming": {
+            "type": "integer"
+          },
+          "count_overdue": {
+            "type": "integer"
+          },
+          "count_mark": {
+            "type": "integer"
+          },
+          "has_child": {
+            "type": "integer"
+          },
+          "has_myteam_progress": {
+            "type": "integer"
+          }
+        }
+      },
+      "contract": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "instance_id": {
+            "type": "integer"
+          },
+          "parent_id": {
+            "type": "integer"
+          },
+          "csm_id": {
+            "type": "integer"
+          },
+          "portal": {
+            "type": "keyword"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "staff_id": {
+            "type": "integer"
+          },
+          "staff": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "profile_id": {
+                "type": "integer"
+              },
+              "mail": {
+                "type": "keyword"
+              },
+              "name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "first_name": {
+                "type": "keyword"
+              },
+              "last_name": {
+                "type": "keyword"
+              },
+              "created": {
+                "type": "date"
+              },
+              "login": {
+                "type": "date"
+              },
+              "access": {
+                "type": "date"
+              },
+              "status": {
+                "type": "short"
+              },
+              "allow_public": {
+                "type": "integer"
+              },
+              "avatar": {
+                "type": "text"
+              },
+              "roles": {
+                "type": "keyword"
+              },
+              "timestamp": {
+                "type": "date"
+              }
+            }
+          },
+          "number_users": {
+            "type": "integer"
+          },
+          "price": {
+            "type": "double"
+          },
+          "currency": {
+            "type": "keyword"
+          },
+          "aud_net_amount": {
+            "type": "float"
+          },
+          "status": {
+            "type": "short"
+          },
+          "start_date": {
+            "type": "date"
+          },
+          "signed_date": {
+            "type": "date"
+          },
+          "initial_term": {
+            "type": "keyword"
+          },
+          "tax": {
+            "type": "double"
+          },
+          "frequency": {
+            "type": "keyword"
+          },
+          "frequency_other": {
+            "type": "keyword"
+          },
+          "custom_term": {
+            "type": "text"
+          },
+          "payment_method": {
+            "type": "keyword"
+          },
+          "renewal_date": {
+            "type": "date"
+          },
+          "cancel_date": {
+            "type": "date"
+          },
+          "created": {
+            "type": "date"
+          },
+          "updated": {
+            "type": "date"
+          }
+        }
+      },
+      "metric": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "title": {
+            "type": "keyword"
+          },
+          "user": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              },
+              "profile_id": {
+                "type": "integer"
+              },
+              "mail": {
+                "type": "keyword"
+              },
+              "name": {
+                "type": "keyword",
+                "fields": {
+                  "analyzed": {
+                    "type": "text"
+                  }
+                }
+              },
+              "first_name": {
+                "type": "keyword"
+              },
+              "last_name": {
+                "type": "keyword"
+              },
+              "created": {
+                "type": "date"
+              },
+              "login": {
+                "type": "date"
+              },
+              "access": {
+                "type": "date"
+              },
+              "status": {
+                "type": "short"
+              },
+              "allow_public": {
+                "type": "integer"
+              },
+              "avatar": {
+                "type": "text"
+              },
+              "roles": {
+                "type": "keyword"
+              },
+              "timestamp": {
+                "type": "date"
+              }
+            }
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "metric_value": {
+            "type": "double"
+          },
+          "status": {
+            "type": "short"
+          },
+          "start_date": {
+            "type": "date"
+          },
+          "description": {
+            "type": "text"
+          },
+          "created": {
+            "type": "date"
+          },
+          "updated": {
+            "type": "date"
+          },
+          "metadata": {
+            "properties": {
+              "user_id": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "activity": {
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "instance_id": {
+            "type": "integer"
+          },
+          "actor_id": {
+            "type": "integer"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "entity_type": {
+            "type": "keyword"
+          },
+          "entity_id": {
+            "type": "integer"
+          },
+          "action_id": {
+            "type": "integer"
+          },
+          "tags": {
+            "type": "keyword",
+            "fields": {
+              "analyzed": {
+                "type": "text"
+              }
+            }
+          },
+          "created": {
+            "type": "date"
+          },
+          "updated": {
+            "type": "date"
+          },
+          "context": {
+            "properties": {
+              "actor": {
+                "type": "keyword"
+              },
+              "user": {
+                "type": "keyword"
+              },
+              "entity": {
+                "properties": {
+                  "title": {
+                    "type": "keyword"
+                  },
+                  "type": {
+                    "type": "keyword"
+                  }
+                }
+              },
+              "diff": {
+                "properties": {
+                  "diff_field_name": {
+                    "type": "text"
+                  },
+                  "old": {
+                    "type": "text"
+                  },
+                  "new": {
+                    "type": "text"
+                  }
+                }
+              },
+              "target": {
+                "properties": {
+                  "id": {
+                    "type": "keyword"
+                  },
+                  "title": {
+                    "type": "keyword"
+                  },
+                  "type": {
+                    "type": "keyword"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "lo_collection": {
+        "_parent": {
+          "type": "lo"
+        },
+        "_routing": {
+          "required": true
+        },
+        "properties": {
+          "lo_id": {
+            "type": "integer"
+          },
+          "collection_id": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

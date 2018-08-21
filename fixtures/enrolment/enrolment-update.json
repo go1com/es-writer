@@ -1,0 +1,16 @@
+{
+  "uri": "/go1_dev/enrolment/_update_by_query",
+  "body": {
+    "query": {
+      "term": {
+        "account.id": 333
+      }
+    },
+    "script": {
+      "inline": "ctx._source.account.managers = params.managers",
+      "params": {
+        "managers": [1, 2, 3]
+      }
+    }
+  }
+}
