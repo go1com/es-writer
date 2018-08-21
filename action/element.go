@@ -29,13 +29,13 @@ type Element struct {
 	// wait_for_active_shards
 }
 
-func (e *Element) Bulkable() string {
+func (e *Element) RequestType() string {
 	if strings.HasSuffix(e.Uri, "/_update_by_query") {
-		return "_update_by_query"
+		return "update_by_query"
 	}
 
 	if strings.HasSuffix(e.Uri, "/_delete_by_query") {
-		return "_delete_by_query"
+		return "delete_by_query"
 	}
 
 	return "bulkable"

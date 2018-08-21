@@ -12,23 +12,24 @@ import (
 )
 
 type Watcher struct {
-	ch       *amqp.Channel
-	actions  *action.Container
-	count    int
+	// RabbitMQ
+	ch      *amqp.Channel
+	actions *action.Container
+	count   int
+
+	// ElasticSearch
 	esClient *elastic.Client
 	esBulk   *elastic.BulkProcessor
 }
 
 func NewWatcher(ch *amqp.Channel, count int, es *elastic.Client, bulk *elastic.BulkProcessor) *Watcher {
-	w := &Watcher{
+	return &Watcher{
 		ch:       ch,
 		actions:  action.NewContainer(),
 		count:    count,
 		esClient: es,
 		esBulk:   bulk,
 	}
-
-	return w
 }
 
 func (w *Watcher) Watch(ctx context.Context, flags es_writer.Flags) (error) {
@@ -60,9 +61,9 @@ func (w *Watcher) onNewMessage(ctx context.Context, m amqp.Delivery) error {
 	}
 
 	// Not all requests are bulkable
-	capatibility := element.Bulkable()
-	if "bulkable" != capatibility {
-		return w.handleUnBulkableAction(ctx, capatibility, element)
+	requestType := element.RequestType()
+	if "bulkable" != requestType {
+		return w.handleUnBulkableAction(ctx, requestType, element)
 	}
 
 	w.actions.Add(*element)
@@ -75,7 +76,7 @@ func (w *Watcher) onNewMessage(ctx context.Context, m amqp.Delivery) error {
 
 func (w *Watcher) handleUnBulkableAction(ctx context.Context, capatibility string, element *action.Element) error {
 	switch capatibility {
-	case "_update_by_query":
+	case "update_by_query":
 		if w.actions.Length() > 0 {
 			w.flush()
 		}
@@ -87,7 +88,7 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, capatibility strin
 			return err
 		}
 
-	case "_delete_by_query":
+	case "delete_by_query":
 		if w.actions.Length() > 0 {
 			w.flush()
 		}
@@ -107,7 +108,7 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, capatibility strin
 
 func (w *Watcher) flush() {
 	deliveryTags := []uint64{}
-	for _, a := range w.actions.Items() {
+	for _, a := range w.actions.Elements() {
 		req, err := a.BuildRequest()
 		if err != nil {
 			logrus.WithError(err).Errorf("Failed to build Elastic Search request")

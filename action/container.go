@@ -1,27 +1,27 @@
 package action
 
 type Container struct {
-	items []Element
+	elements []Element
 }
 
 func NewContainer() *Container {
 	return &Container{
-		items: []Element{},
+		elements: []Element{},
 	}
 }
 
-func (c *Container) Add(item Element) {
-	c.items = append(c.items, item)
+func (c *Container) Add(element Element) {
+	c.elements = append(c.elements, element)
 }
 
 func (c *Container) Clear() {
-	c.items = []Element{}
+	c.elements = []Element{}
 }
 
 func (c *Container) Length() int {
-	return len(c.items)
+	return len(c.elements)
 }
 
-func (c *Container) Items() []Element {
-	return c.items
+func (c *Container) Elements() []Element {
+	return c.elements
 }
