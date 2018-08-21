@@ -67,6 +67,22 @@ func (e *Element) Source() ([]string, error) {
 }
 
 func (e *Element) RequestType() string {
+	uri := strings.TrimLeft(e.Uri, "/")
+	uriChunks := strings.Split(uri, "/")
+
+	// URI pattern: REQUEST /go1_dev
+	if len(uriChunks) == 1 {
+		if e.Method == "PUT" {
+			return "indices_create"
+		}
+
+		if e.Method == "DELETE" {
+			if 1 == strings.Count(e.Method, "/") {
+				return "indices_delete"
+			}
+		}
+	}
+
 	if strings.HasSuffix(e.Uri, "/_update_by_query") {
 		return "update_by_query"
 	}
