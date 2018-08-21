@@ -163,39 +163,3 @@ func (e *Element) BuildDeleteByQueryRequest(client *elastic.Client) (*elastic.De
 
 	return req, nil
 }
-
-func (e *Element) BuildRequest() (elastic.BulkableRequest, error) {
-	if "DELETE" == e.Method {
-		req := elastic.NewBulkDeleteRequest()
-		req.Routing(e.Routing)
-		req.Parent(e.Parent)
-		req.Id(e.DocId)
-		req.Version(e.Version)
-
-		return req, nil
-	}
-
-	if strings.HasSuffix(e.Uri, "/_update") {
-		req := elastic.NewBulkUpdateRequest()
-		req.Routing(e.Routing)
-		req.Parent(e.Parent)
-		req.Id(e.DocId)
-		req.Version(e.Version)
-		req.RetryOnConflict(e.RetryOnConflict)
-		req.Doc(e.Body)
-		// req.Script()
-
-		return req, nil
-	}
-
-	if strings.HasSuffix(e.Uri, "/_create") {
-		req := elastic.NewBulkIndexRequest()
-		req.Version(e.Version)
-		req.VersionType(e.VersionType)
-		req.RetryOnConflict(e.RetryOnConflict)
-
-		return req, nil
-	}
-
-	return nil, fmt.Errorf("unable to convert to ElasticSearch query")
-}

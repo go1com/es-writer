@@ -5,7 +5,6 @@ import (
 	"context"
 	"github.com/streadway/amqp"
 	"time"
-	"github.com/Sirupsen/logrus"
 	"gopkg.in/olivere/elastic.v5"
 	"fmt"
 )
@@ -140,14 +139,9 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, capatibility strin
 
 func (w *Watcher) flush() {
 	deliveryTags := []uint64{}
-	for _, a := range w.actions.Elements() {
-		req, err := a.BuildRequest()
-		if err != nil {
-			logrus.WithError(err).Errorf("Failed to build Elastic Search request")
-		}
-
-		deliveryTags = append(deliveryTags, a.DeliveryTag)
-		w.esBulk.Add(req)
+	for _, element := range w.actions.Elements() {
+		deliveryTags = append(deliveryTags, element.DeliveryTag)
+		w.esBulk.Add(element)
 	}
 
 	err := w.esBulk.Flush()
