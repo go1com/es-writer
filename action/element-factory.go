@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func NewAction(deliveryTag uint64, raw []byte) (*Element, error) {
+func NewElement(deliveryTag uint64, raw []byte) (*Element, error) {
 	m := Element{}
 	err := json.Unmarshal(raw, &m)
 	if err != nil {

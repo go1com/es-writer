@@ -76,18 +76,17 @@ func listen(flags es_writer.Flags, ch *amqp.Channel, messages <-chan amqp.Delive
 			}
 
 		case m := <-messages:
-			if action, err := action.NewAction(m.DeliveryTag, m.Body); err != nil {
+			if element, err := action.NewElement(m.DeliveryTag, m.Body); err != nil {
 				logrus.
 					WithError(err).
 					Errorf("Failed to convert queue message to Elastic Search request.")
 			} else {
 				// Not all requests are bulkable.
-				capatibility := action.Bulkable()
+				capatibility := element.Bulkable()
 
 				switch capatibility {
 				case "bulkable":
-					actions.Add(*action)
-
+					actions.Add(*element)
 					if actions.Length() >= count {
 						process()
 					}
@@ -97,7 +96,7 @@ func listen(flags es_writer.Flags, ch *amqp.Channel, messages <-chan amqp.Delive
 						process()
 					}
 
-					req, err := action.BuildUpdateByQueryRequest(client)
+					req, err := element.BuildUpdateByQueryRequest(client)
 					if err != nil {
 						req.Do(ctx)
 					}
@@ -107,7 +106,7 @@ func listen(flags es_writer.Flags, ch *amqp.Channel, messages <-chan amqp.Delive
 						process()
 					}
 
-					req, err := action.BuildDeleteByQueryRequest(client)
+					req, err := element.BuildDeleteByQueryRequest(client)
 					if err != nil {
 						req.Do(ctx)
 					}
