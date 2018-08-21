@@ -2,27 +2,24 @@ package main
 
 import (
 	"go1/a-wip"
-	"fmt"
+	"context"
+	"gopkg.in/olivere/elastic.v5"
+	"github.com/Sirupsen/logrus"
 )
 
 func main() {
-	var input []byte
+	ctx := context.Background()
+	_, bulk, _ := a_wip.ElasticSearchTools(ctx)
 
-	if true {
-		input = []byte(`
-			{
-				"http_method": "POST", 
-				"uri":  "/go1_dev/portal/111/_create?routing=go1_dev&parent=333", 
-				"body": {
-					"id": 111
-				}
-			}
-`)
-		msg, err := a_wip.NewAction(111, input)
-		if err != nil {
-			return
-		}
+	req := elastic.NewBulkDeleteRequest()
+	req.Index("go1_dev")
+	req.Type("portal")
+	req.Id("12344")
 
-		fmt.Printf("BODY: %s", msg.Body)
+	bulk.Add(req)
+	err := bulk.Flush()
+
+	if err != nil {
+		logrus.WithError(err).Errorf("Failed to perform bulk request to Elastic Search")
 	}
 }

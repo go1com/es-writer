@@ -40,7 +40,7 @@ func listen(ch *amqp.Channel, messages <-chan amqp.Delivery, ticker *time.Ticker
 		for _, a := range actions.Items() {
 			req, err := a.BuildRequest()
 			if err != nil {
-				logrus.WithError(err).Errorf("Failed to build Elastic Request")
+				logrus.WithError(err).Errorf("Failed to build Elastic Search request")
 			}
 
 			deliveryTags = append(deliveryTags, a.DeliveryTag)

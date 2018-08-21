@@ -18,25 +18,22 @@ func ElasticSearchTools(ctx context.Context) (*elastic.Client, *elastic.BulkProc
 
 	client, err := elastic.NewClientFromConfig(cfg)
 	if err != nil {
-		logrus.Fatalf("faield to create client: %s", err.Error())
-
 		return nil, nil, err
 	}
 
-	client.UpdateByQuery("").
-		Do(ctx)
-
 	processor, err := elastic.
 		NewBulkProcessorService(client).
-		Name("wip-es").
+		Name("es-writter").
 		Stats(true).
 		FlushInterval(2 * time.Second).
 		BulkActions(20).
 		Do(ctx)
-	
+
 	if err != nil {
 		logrus.Fatalf("failed to create bulk tools: %s", err.Error())
+
+		return nil, nil, err
 	}
 
-	return client, processor, err
+	return client, processor, nil
 }
