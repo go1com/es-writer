@@ -41,6 +41,26 @@ func (e *Element) RequestType() string {
 	return "bulkable"
 }
 
+func (e *Element) BuildIndicesCreateRequest(client *elastic.Client) (*elastic.IndicesCreateService, error) {
+	req := elastic.NewIndicesCreateService(client)
+	req.Index(e.Index)
+	body, err := json.Marshal(e.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Body(string(body))
+
+	return req, nil
+}
+
+func (e *Element) BuildIndicesDeleteRequest(client *elastic.Client) (*elastic.IndicesDeleteService, error) {
+	req := elastic.NewIndicesDeleteService(client)
+	req.Index([]string{e.Index})
+
+	return req, nil
+}
+
 func (e *Element) BuildUpdateByQueryRequest(client *elastic.Client) (*elastic.UpdateByQueryService, error) {
 	req := client.UpdateByQuery(e.Index)
 

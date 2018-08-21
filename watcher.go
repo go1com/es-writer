@@ -117,6 +117,20 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, capatibility strin
 			return err
 		}
 
+	case "indices_create":
+		req, err := element.BuildIndicesCreateRequest(w.esClient)
+		if err != nil {
+			_, err := req.Do(ctx)
+			return err
+		}
+
+	case "indices_delete":
+		req, err := element.BuildIndicesDeleteRequest(w.esClient)
+		if err != nil {
+			_, err := req.Do(ctx)
+			return err
+		}
+
 	default:
 		return fmt.Errorf("unsupported request type: %s", capatibility)
 	}
