@@ -5,49 +5,52 @@ import (
 	"github.com/jmespath/go-jmespath"
 	"github.com/Sirupsen/logrus"
 	"fmt"
-	"context"
-	"go1/es-writer/action"
-	"gopkg.in/olivere/elastic.v5"
-	"go1/es-writer"
 )
 
 func main() {
-	ctx := context.Background()
-	flags := es_writer.NewFlags()
-	_, bulk, err := action.Clients(ctx, flags)
+	indicesCreate()
+}
+
+func indicesCreate() {
+	input := `
+		{
+			"mappings": {
+				"portal": {
+					"__parent": { "type": "user" },
+					"_routing": { "required": true },
+					"properties": {
+						"id": { "type": "keyword" }
+					}
+				}
+			}
+		}
+`
+
+	var raw interface{}
+	err := json.Unmarshal([]byte(input), &raw)
 	if err != nil {
-		logrus.WithError(err).Errorln("failed to create ES clients")
-	}
-
-	req := elastic.NewBulkDeleteRequest()
-	fmt.Println(req)
-	return
-
-	req.Index("go1_dev")
-	req.Type("portal")
-	req.Id("12344")
-
-	bulk.Add(req)
-
-	err = bulk.Flush()
-	if err != nil {
-		logrus.WithError(err).Errorf("Failed to perform bulk request to Elastic Search")
-	}
-
-	if false {
-		if false {
-			found()
+		logrus.WithError(err).Errorln()
+	} else {
+		mappings, err := jmespath.Search("mappings", raw)
+		if err != nil {
+			logrus.WithError(err).Errorln()
 		} else {
-			notFound()
+			fmt.Println(mappings)
+
+			bMapping, err := json.Marshal(mappings)
+			fmt.Printf("MAP: %s ERR: %s\n", bMapping, err)
+
+			bRaw, _ := json.Marshal(raw)
+			fmt.Printf("RAW: %s", bRaw)
 		}
 	}
 }
 
-func found() {
+func isScript() {
 	var x interface{}
 
 	input := `
-		{ 
+		{
 			"script" : { 
 				"inline": "ctx._source.counter += params.param1", 
 				"lang" : "painless", 
@@ -69,7 +72,7 @@ func found() {
 	fmt.Printf("%T: %s | %d\n", x2, x2)
 }
 
-func notFound() {
+func isNotScript() {
 	var x interface{}
 
 	input := `
