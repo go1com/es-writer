@@ -4,9 +4,12 @@ import (
 	"gopkg.in/olivere/elastic.v5"
 	"strings"
 	"fmt"
+	"encoding/json"
 )
 
 type Element struct {
+	elastic.BulkableRequest
+
 	DeliveryTag uint64
 
 	Method            string      `json:"http_method"`
@@ -27,6 +30,40 @@ type Element struct {
 	VersionType string
 
 	// wait_for_active_shards
+}
+
+func (e *Element) String() string {
+	lines, err := e.Source()
+	if err != nil {
+		return fmt.Sprintf("error: %v", err)
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+func (e *Element) Source() ([]string, error) {
+	var err error
+	var command string
+	var body string
+
+	// Build command line
+	// ---------------------
+
+	// index
+	// update
+
+	// Build body line
+	// ---------------------
+	if e.Body != nil {
+		byteSlice, err := json.Marshal(e.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		body = string(byteSlice)
+	}
+
+	return []string{command, body}, err
 }
 
 func (e *Element) RequestType() string {
