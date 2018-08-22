@@ -3,17 +3,18 @@ package es_writer
 import (
 	"testing"
 	"context"
-	"github.com/streadway/amqp"
-	"io/ioutil"
-	"runtime"
-	"path"
-	"github.com/Sirupsen/logrus"
 	"time"
 	"gopkg.in/olivere/elastic.v5"
 	"encoding/json"
+	"github.com/streadway/amqp"
+	"github.com/Sirupsen/logrus"
+	"runtime"
+	"path"
+	"io/ioutil"
+	"strings"
 )
 
-func NewFlagsForTest() Flags {
+func newFlagsForTest() Flags {
 	f := Flags{}
 
 	Url := "amqp://go1:go1@127.0.0.1:5672/"
@@ -40,9 +41,27 @@ func NewFlagsForTest() Flags {
 	return f
 }
 
+func queue(ch *amqp.Channel, f Flags, file string) {
+	err := ch.Publish(*f.Exchange, *f.RoutingKey, false, false, amqp.Publishing{
+		Body: realpath(file),
+	})
+
+	if err != nil {
+		logrus.WithError(err).Panicln("failed to publish message")
+	}
+}
+
+func realpath(filePath string) []byte {
+	_, currentFileName, _, _ := runtime.Caller(1)
+	filePath = path.Dir(currentFileName) + "/fixtures/" + filePath
+	body, _ := ioutil.ReadFile(filePath)
+
+	return body
+}
+
 func TestFlags(t *testing.T) {
 	ctx := context.Background()
-	f := NewFlagsForTest()
+	f := newFlagsForTest()
 	con, err := f.RabbitMqConnection()
 	if err != nil {
 		t.Fatalf("failed to make rabbitMQ connection: %s", err.Error())
@@ -72,8 +91,7 @@ func TestFlags(t *testing.T) {
 
 func TestIndicesCreate(t *testing.T) {
 	ctx := context.Background()
-	f := NewFlagsForTest()
-
+	f := newFlagsForTest()
 	con, _ := f.RabbitMqConnection()
 	defer con.Close()
 	ch, _ := f.RabbitMqChannel(con)
@@ -89,16 +107,16 @@ func TestIndicesCreate(t *testing.T) {
 			Do(ctx)
 	}
 
-	removeIndex()       // Delete index before testing
-	defer removeIndex() // Clean up index after testing
-
+	removeIndex()                               // Delete index before testing
+	defer removeIndex()                         // Clean up index after testing
 	queue(ch, f, "indices/indices-create.json") // queue a message to rabbitMQ
-
-	// Wait a bit so that the message can be consumed.
-	time.Sleep(2 * time.Second)
+	time.Sleep(2 * time.Second)                 // Wait a bit so that the message can be consumed.
 	for {
-		if 0 == watcher.UnitWorks() {
+		units := watcher.UnitWorks()
+		if 0 == units {
 			break
+		} else {
+			logrus.Infoln("Remaining actions: %d", units)
 		}
 
 		time.Sleep(1 * time.Second)
@@ -120,20 +138,36 @@ func TestIndicesCreate(t *testing.T) {
 	}
 }
 
-func queue(ch *amqp.Channel, f Flags, file string) {
-	err := ch.Publish(*f.Exchange, *f.RoutingKey, false, false, amqp.Publishing{
-		Body: realpath(file),
-	})
+func TestIndicesDelete(t *testing.T) {
+	ctx := context.Background()
+	f := newFlagsForTest()
+	con, _ := f.RabbitMqConnection()
+	defer con.Close()
+	ch, _ := f.RabbitMqChannel(con)
+	defer ch.Close()
+	es, _ := f.ElasticSearchClient()
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es)
+	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk)
+	go watcher.Watch(ctx, f)
 
-	if err != nil {
-		logrus.WithError(err).Panicln("failed to publish message")
+	queue(ch, f, "indices/indices-create.json") // create the index
+	queue(ch, f, "indices/indices-drop.json")   // then, drop it.
+
+	// Wait a bit so that the message can be consumed.
+	time.Sleep(2 * time.Second)
+	for {
+		units := watcher.UnitWorks()
+		if 0 == units {
+			break
+		} else {
+			logrus.Infoln("Remaining actions: %d", units)
+		}
+
+		time.Sleep(1 * time.Second)
 	}
-}
 
-func realpath(filePath string) []byte {
-	_, currentFileName, _, _ := runtime.Caller(1)
-	filePath = path.Dir(currentFileName) + "/fixtures/" + filePath
-	body, _ := ioutil.ReadFile(filePath)
-
-	return body
+	_, err := elastic.NewIndicesGetService(es).Index("go1_qa").Do(ctx)
+	if !strings.Contains(err.Error(), "[type=index_not_found_exception]") {
+		t.Fatal("Index is not deleted successfully.")
+	}
 }

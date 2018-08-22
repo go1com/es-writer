@@ -58,7 +58,7 @@ func (w *Watcher) Watch(ctx context.Context, flags Flags) (error) {
 
 			err := w.onNewMessage(ctx, m)
 			if err != nil {
-				logrus.WithError(err).Errorln("Failted to handle new message.")
+				logrus.WithError(err).Errorln("Failed to handle new message: " + string(m.Body))
 			}
 		}
 	}
@@ -144,7 +144,8 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string
 		_, err = service.Do(ctx)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
-				// That's ok if the index is existing.
+				logrus.WithError(err).Errorln("That's ok if the index is existing.")
+
 				return nil
 			}
 		}
@@ -152,11 +153,21 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string
 		return err
 
 	case "indices_delete":
-		req, err := element.IndicesDeleteService(w.esClient)
+		service, err := element.IndicesDeleteService(w.esClient)
 		if err != nil {
-			_, err := req.Do(ctx)
 			return err
 		}
+
+		_, err = service.Do(ctx)
+		if err != nil {
+			if strings.Contains(err.Error(), "[type=index_not_found_exception]") {
+				logrus.WithError(err).Infoln("That's ok if the index is not existing, already deleted somewhere.")
+
+				return nil
+			}
+		}
+
+		return err
 
 	default:
 		return fmt.Errorf("unsupported request type: %s", requestType)

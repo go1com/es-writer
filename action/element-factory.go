@@ -53,13 +53,9 @@ func NewElement(deliveryTag uint64, raw []byte) (Element, error) {
 	// URI pattern: REQUEST /go1_dev
 	if len(uriChunks) == 2 {
 		if e.Method == "PUT" {
-			// indices_create
-			e.Index = uriChunks[1]
+			e.Index = uriChunks[1] // indices_create
 		} else if e.Method == "DELETE" {
-			if 1 == strings.Count(e.Method, "/") {
-				// indices_delete
-				e.Index = uriChunks[1]
-			}
+			e.Index = uriChunks[1] // indices_delete
 		}
 	} else {
 		if "DELETE" == e.Method {

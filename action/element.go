@@ -84,9 +84,7 @@ func (e *Element) RequestType() string {
 		}
 
 		if e.Method == "DELETE" {
-			if 1 == strings.Count(e.Method, "/") {
-				return "indices_delete"
-			}
+			return "indices_delete"
 		}
 	}
 
