@@ -210,5 +210,47 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+func TestUpdate(t *testing.T) {
+	ctx := context.Background()
+	f := newFlagsForTest()
+	con, _ := f.RabbitMqConnection()
+	defer con.Close()
+	ch, _ := f.RabbitMqChannel(con)
+	defer ch.Close()
+	es, _ := f.ElasticSearchClient()
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es)
+	defer bulk.Close()
+	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk, *f.Debug)
+	go watcher.Watch(ctx, f)
+
+	queue(ch, f, "indices/indices-drop.json")       // Delete index before testing
+	queue(ch, f, "indices/indices-create.json")     // create the index
+	queue(ch, f, "portal/portal-index.json")        // create portal object
+	queue(ch, f, "portal/portal-update.json")        // update portal object
+	defer queue(ch, f, "indices/indices-drop.json") // then, drop it.
+	waitForCompletion(watcher)                      // Wait a bit so that the message can be consumed.
+
+	stats := bulk.Stats()
+	if stats.Succeeded == 0 {
+		t.Error("action failed to process")
+	}
+
+	res, _ := elastic.
+		NewGetService(es).
+		Index("go1_qa").
+		Routing("go1_qa").
+		Type("portal").
+		Id("111").
+		FetchSource(true).
+		Do(ctx)
+
+	source, _ := json.Marshal(res.Source)
+	correctTitle := strings.Contains(string(source), `"title":"qa.mygo1.com"`)
+	correctStatus := strings.Contains(string(source), `"status":0`)
+	if !correctTitle || !correctStatus {
+		t.Error("failed to load portal document")
+	}
+}
+
 // update_by_query
 // delete_by_query
