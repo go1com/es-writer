@@ -1,4 +1,4 @@
-stages: ["test", "build"]
+stages: ["test", "build", "deploy"]
 
 test:
   image: registry.code.go1.com.au/go1/docker:golang
@@ -56,3 +56,16 @@ build:
     go build
     -o $CI_PROJECT_DIR/artifacts/app
     $GOPATH/src/go1/es-writer/cmd/main.go
+
+dockerize:
+  image: go1com/ci-deploy
+  type: deploy
+  only: ["master"]
+  tags: ["aws"]
+  script:
+  - export ROOT=$(pwd)
+  - cd artifacts
+  - cp $ROOT/Dockerfile $CI_PROJECT_DIR/artifacts/Dockerfile
+  - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.code.go1.com.au
+  - docker build -t registry.code.go1.com.au/fn/es-writer:master .
+  - docker push registry.code.go1.com.au/fn/es-writer:master
