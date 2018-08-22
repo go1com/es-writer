@@ -8,6 +8,7 @@ import (
 	"gopkg.in/olivere/elastic.v5"
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"strings"
 )
 
 type Watcher struct {
@@ -29,6 +30,10 @@ func NewWatcher(ch *amqp.Channel, count int, es *elastic.Client, bulk *elastic.B
 		esClient: es,
 		esBulk:   bulk,
 	}
+}
+
+func (w *Watcher) UnitWorks() int {
+	return w.actions.Length()
 }
 
 func (w *Watcher) Watch(ctx context.Context, flags Flags) (error) {
@@ -89,7 +94,12 @@ func (w *Watcher) onNewMessage(ctx context.Context, m amqp.Delivery) error {
 	// Not all requests are bulkable
 	requestType := element.RequestType()
 	if "bulkable" != requestType {
-		return w.handleUnBulkableAction(ctx, requestType, element)
+		err = w.handleUnBulkableAction(ctx, requestType, element)
+		if err == nil {
+			w.ch.Ack(m.DeliveryTag, true)
+		}
+
+		return err
 	}
 
 	w.actions.Add(element)
@@ -132,6 +142,12 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string
 		}
 
 		_, err = service.Do(ctx)
+		if err != nil {
+			if strings.Contains(err.Error(), "already exists") {
+				// That's ok if the index is existing.
+				return nil
+			}
+		}
 
 		return err
 

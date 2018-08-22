@@ -9,77 +9,90 @@ import (
 )
 
 func NewElement(deliveryTag uint64, raw []byte) (Element, error) {
-	m := Element{}
-	err := json.Unmarshal(raw, &m)
+	e := Element{}
+	err := json.Unmarshal(raw, &e)
 	if err != nil {
-		return m, fmt.Errorf("failed to parse m: %s", err.Error())
+		return e, fmt.Errorf("failed to parse e: %s", err.Error())
 	}
 
-	uri, err := url.Parse(m.Uri)
+	uri, err := url.Parse(e.Uri)
 	if err != nil {
-		fmt.Printf("Failed to parse m.uri: %s.\n", err.Error())
+		fmt.Printf("Failed to parse e.uri: %s.\n", err.Error())
 	}
 
-	m.Routing = uri.Query().Get("routing")
-	m.Parent = uri.Query().Get("parent")
-	m.Refresh = uri.Query().Get("refresh") != "false"
-	m.WaitForCompletion = uri.Query().Get("wait_for_completion") != "false"
+	e.Routing = uri.Query().Get("routing")
+	e.Parent = uri.Query().Get("parent")
+	e.Refresh = uri.Query().Get("refresh") != "false"
+	e.WaitForCompletion = uri.Query().Get("wait_for_completion") != "false"
 
 	retryOnConflict := uri.Query().Get("retry_on_conflict")
 	if retryOnConflict != "" {
-		m.RetryOnConflict, err = strconv.Atoi(retryOnConflict)
+		e.RetryOnConflict, err = strconv.Atoi(retryOnConflict)
 		if err != nil {
-			return m, err
+			return e, err
 		}
 	}
 
 	conflict := uri.Query().Get("conflict");
 	if conflict != "" {
-		m.Conflict = conflict
+		e.Conflict = conflict
 	}
 
-	m.VersionType = uri.Query().Get("version_type")
+	e.VersionType = uri.Query().Get("version_type")
 	version := uri.Query().Get("version")
 	if version != "" {
-		m.Version, err = strconv.ParseInt(version, 10, 32)
+		e.Version, err = strconv.ParseInt(version, 10, 32)
 		if err != nil {
-			return m, err
+			return e, err
 		}
 	}
 
 	// Parse index, doc-type, doc-id, … from URI
-	uriChunks := strings.Split(m.Uri, "/")
+	uriChunks := strings.Split(e.Uri, "/")
 
-	if "DELETE" == m.Method {
-		m.Index = uriChunks[1] // URI pattern: /go1_dev/portal/111
-		m.DocType = uriChunks[2]
-		m.DocId = uriChunks[3]
-	} else {
-		strings.Split(m.Uri, "/")
-		switch {
-		case strings.HasSuffix(m.Uri, "/_delete_by_query"):
-			m.Index = uriChunks[1] // URI pattern: /go1_dev/_delete_by_query
-
-		case strings.HasSuffix(m.Uri, "/_update_by_query"):
-			m.Index = uriChunks[1]
-			if uriChunks[2] == "_update_by_query" {
-				// URI pattern: /go1_dev/_update_by_query
-			} else {
-				// URI pattern: /go1_dev/enrolment/_update_by_query
-				m.DocType = uriChunks[2]
+	// URI pattern: REQUEST /go1_dev
+	if len(uriChunks) == 2 {
+		if e.Method == "PUT" {
+			// indices_create
+			e.Index = uriChunks[1]
+		} else if e.Method == "DELETE" {
+			if 1 == strings.Count(e.Method, "/") {
+				// indices_delete
+				e.Index = uriChunks[1]
 			}
+		}
+	} else {
+		if "DELETE" == e.Method {
+			e.Index = uriChunks[1] // URI pattern: /go1_dev/portal/111
+			e.DocType = uriChunks[2]
+			e.DocId = uriChunks[3]
+		} else {
+			strings.Split(e.Uri, "/")
+			switch {
+			case strings.HasSuffix(e.Uri, "/_delete_by_query"):
+				e.Index = uriChunks[1] // URI pattern: /go1_dev/_delete_by_query
 
-		case strings.HasSuffix(m.Uri, "/_update"):
-			m.Index = uriChunks[1] // URI pattern: /go1_dev/eck_metadata/333/_update
-			m.DocType = uriChunks[2]
-			m.DocId = uriChunks[3]
+			case strings.HasSuffix(e.Uri, "/_update_by_query"):
+				e.Index = uriChunks[1]
+				if uriChunks[2] == "_update_by_query" {
+					// URI pattern: /go1_dev/_update_by_query
+				} else {
+					// URI pattern: /go1_dev/enrolment/_update_by_query
+					e.DocType = uriChunks[2]
+				}
 
-		case strings.HasSuffix(m.Uri, "/_create"):
-			m.Index = uriChunks[1] // URI pattern: /go1_dev/portal/111/_create
-			m.DocType = uriChunks[2]
-			m.DocId = uriChunks[3]
+			case strings.HasSuffix(e.Uri, "/_update"):
+				e.Index = uriChunks[1] // URI pattern: /go1_dev/eck_metadata/333/_update
+				e.DocType = uriChunks[2]
+				e.DocId = uriChunks[3]
+
+			case strings.HasSuffix(e.Uri, "/_create"):
+				e.Index = uriChunks[1] // URI pattern: /go1_dev/portal/111/_create
+				e.DocType = uriChunks[2]
+				e.DocId = uriChunks[3]
+			}
 		}
 	}
 
-	return m, nil
+	return e, nil
 }
