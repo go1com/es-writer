@@ -1,4 +1,4 @@
 {
   "http_method": "DELETE",
-  "uri": "/go1_qa/portal/111"
+  "uri": "/go1_qa/portal/111?routing=go1_qa"
 }
