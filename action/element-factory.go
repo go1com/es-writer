@@ -8,13 +8,13 @@ import (
 	"strings"
 )
 
-func NewElement(deliveryTag uint64, raw []byte) (*Element, error) {
+func NewElement(deliveryTag uint64, raw []byte) (Element, error) {
 	m := Element{}
 	err := json.Unmarshal(raw, &m)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse m: %s", err.Error())
+		return m, fmt.Errorf("failed to parse m: %s", err.Error())
 	}
-	
+
 	uri, err := url.Parse(m.Uri)
 	if err != nil {
 		fmt.Printf("Failed to parse m.uri: %s.\n", err.Error())
@@ -29,7 +29,7 @@ func NewElement(deliveryTag uint64, raw []byte) (*Element, error) {
 	if retryOnConflict != "" {
 		m.RetryOnConflict, err = strconv.Atoi(retryOnConflict)
 		if err != nil {
-			return nil, err
+			return m, err
 		}
 	}
 
@@ -43,7 +43,7 @@ func NewElement(deliveryTag uint64, raw []byte) (*Element, error) {
 	if version != "" {
 		m.Version, err = strconv.ParseInt(version, 10, 32)
 		if err != nil {
-			return nil, err
+			return m, err
 		}
 	}
 
@@ -81,5 +81,5 @@ func NewElement(deliveryTag uint64, raw []byte) (*Element, error) {
 		}
 	}
 
-	return &m, nil
+	return m, nil
 }

@@ -1,5 +1,5 @@
 {
-  "uri": "/go1_dev/enrolment/_update_by_query",
+  "uri": "/go1_qa/enrolment/_update_by_query",
   "body": {
     "query": {
       "term": {

@@ -42,58 +42,19 @@ func (e Element) String() string {
 }
 
 func (e Element) Source() ([]string, error) {
-	var (
-		result  interface{}
-		cmd     map[string]map[string]string
-		command []byte
-		body    []byte
-		err     error
-	)
-
 	if strings.HasSuffix(e.Uri, "/_create") {
-		// [command-line] { "index" : { "_index" : "test", "_type" : "type1", "_id" : "1" } }
-		cmd = map[string](map[string]string){
-			"index": {
-				"_index": e.Index,
-				"_type":  e.DocType,
-				"_id":    e.DocId,
-			},
-		}
-
-		command, err = json.Marshal(cmd)
+		body, err := json.Marshal(e.Body)
 		if err != nil {
 			return nil, err
 		}
 
-		// [body-line] { "field1" : "value1" }
-		body, err = json.Marshal(e.Body)
-		if err != nil {
-			return nil, err
-		}
-
-		return []string{string(command), string(body)}, nil
+		return []string{NewCommand(e).String("index"), string(body)}, nil
 	} else if strings.HasSuffix(e.Uri, "/_update") {
-		// [command-line] { "update" : {"_id" : "1", "_type" : "type1", "_index" : "test"} }
-		cmd = map[string]map[string]string{
-			"update": {
-				"_index": e.Index,
-				"_type":  e.DocType,
-				"_id":    e.DocId,
-			},
-		}
+		var body []byte
 
-		command, err = json.Marshal(cmd)
-		if err != nil {
-			return nil, err
-		}
-
-		keys := []string{
-			"doc",    // case 1: { "doc" : {"field2" : "value2"} }
-			"script", // case 2: { "script" : { "inline": "ctx._source.counter += params.param1", "lang" : "painless", "params" : {"param1" : 1}}, "upsert" : {"counter" : 1}}
-		}
-
-		for _, key := range keys {
-			result, err = jmespath.Search(key, e.Body)
+		// { "doc": … } || { "script": … }
+		for _, key := range []string{"doc", "script"} {
+			result, err := jmespath.Search(key, e.Body)
 			if result != nil {
 				body, err = json.Marshal(e.Body)
 				if err != nil {
@@ -104,23 +65,9 @@ func (e Element) Source() ([]string, error) {
 			}
 		}
 
-		return []string{string(command), string(body)}, nil
+		return []string{NewCommand(e).String("update"), string(body)}, nil
 	} else if e.Method == "DELETE" {
-		// [command-line] { "delete" : { "_index" : "test", "_type" : "type1", "_id" : "2" } }
-		cmd = map[string]map[string]string{
-			"update": {
-				"_index": e.Index,
-				"_type":  e.DocType,
-				"_id":    e.DocId,
-			},
-		}
-
-		command, err := json.Marshal(cmd)
-		if err != nil {
-			return nil, err
-		}
-
-		return []string{string(command)}, nil
+		return []string{NewCommand(e).String("delete")}, nil
 	}
 
 	return nil, fmt.Errorf("unknown request type")
@@ -157,12 +104,7 @@ func (e *Element) RequestType() string {
 func (e *Element) IndicesCreateService(client *elastic.Client) (*elastic.IndicesCreateService, error) {
 	req := elastic.NewIndicesCreateService(client)
 	req.Index(e.Index)
-	body, err := json.Marshal(e.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Body(string(body))
+	req.BodyJson(e.Body)
 
 	return req, nil
 }

@@ -3,6 +3,12 @@ package es_writer
 import (
 	"testing"
 	"context"
+	"github.com/streadway/amqp"
+	"io/ioutil"
+	"runtime"
+	"path"
+	"github.com/Sirupsen/logrus"
+	"time"
 )
 
 func TestFlags(t *testing.T) {
@@ -33,4 +39,22 @@ func TestFlags(t *testing.T) {
 	} else {
 		defer bulk.Close()
 	}
+}
+
+func queue(ch *amqp.Channel, f Flags, file string) {
+	err := ch.Publish(*f.Exchange, *f.RoutingKey, false, false, amqp.Publishing{
+		Body: realpath(file),
+	})
+
+	if err != nil {
+		logrus.WithError(err).Panicln("failed to publish message")
+	}
+}
+
+func realpath(filePath string) []byte {
+	_, currentFileName, _, _ := runtime.Caller(1)
+	filePath = path.Dir(currentFileName) + "/fixtures/" + filePath
+	body, _ := ioutil.ReadFile(filePath)
+
+	return body
 }

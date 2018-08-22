@@ -7,6 +7,7 @@ import (
 	"time"
 	"gopkg.in/olivere/elastic.v5"
 	"fmt"
+	"github.com/Sirupsen/logrus"
 )
 
 type Watcher struct {
@@ -45,7 +46,15 @@ func (w *Watcher) Watch(ctx context.Context, flags Flags) (error) {
 			}
 
 		case m := <-messages:
-			w.onNewMessage(ctx, m)
+			if m.DeliveryTag == 0 {
+				w.ch.Nack(m.DeliveryTag, false, false)
+				continue
+			}
+
+			err := w.onNewMessage(ctx, m)
+			if err != nil {
+				logrus.WithError(err).Errorln("Failted to handle new message.")
+			}
 		}
 	}
 
@@ -83,7 +92,7 @@ func (w *Watcher) onNewMessage(ctx context.Context, m amqp.Delivery) error {
 		return w.handleUnBulkableAction(ctx, requestType, element)
 	}
 
-	w.actions.Add(*element)
+	w.actions.Add(element)
 	if w.actions.Length() >= w.count {
 		w.flush()
 	}
@@ -91,16 +100,16 @@ func (w *Watcher) onNewMessage(ctx context.Context, m amqp.Delivery) error {
 	return nil
 }
 
-func (w *Watcher) handleUnBulkableAction(ctx context.Context, capatibility string, element *action.Element) error {
-	switch capatibility {
+func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string, element action.Element) error {
+	switch requestType {
 	case "update_by_query":
 		if w.actions.Length() > 0 {
 			w.flush()
 		}
 
-		req, err := element.UpdateByQueryService(w.esClient)
+		service, err := element.UpdateByQueryService(w.esClient)
 		if err != nil {
-			_, err := req.Do(ctx)
+			_, err := service.Do(ctx)
 
 			return err
 		}
@@ -110,18 +119,21 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, capatibility strin
 			w.flush()
 		}
 
-		req, err := element.DeleteByQueryService(w.esClient)
+		service, err := element.DeleteByQueryService(w.esClient)
 		if err != nil {
-			_, err := req.Do(ctx)
+			_, err := service.Do(ctx)
 			return err
 		}
 
 	case "indices_create":
-		req, err := element.IndicesCreateService(w.esClient)
+		service, err := element.IndicesCreateService(w.esClient)
 		if err != nil {
-			_, err := req.Do(ctx)
 			return err
 		}
+
+		_, err = service.Do(ctx)
+
+		return err
 
 	case "indices_delete":
 		req, err := element.IndicesDeleteService(w.esClient)
@@ -131,7 +143,7 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, capatibility strin
 		}
 
 	default:
-		return fmt.Errorf("unsupported request type: %s", capatibility)
+		return fmt.Errorf("unsupported request type: %s", requestType)
 	}
 
 	return nil
