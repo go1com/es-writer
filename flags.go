@@ -9,6 +9,7 @@ import (
 	"gopkg.in/olivere/elastic.v5"
 	"gopkg.in/olivere/elastic.v5/config"
 	"context"
+	"os"
 )
 
 type Flags struct {
@@ -25,18 +26,28 @@ type Flags struct {
 	Debug         *bool
 }
 
+func env(key string, defaultValue string) string {
+	value, _ := os.LookupEnv(key)
+
+	if "" == value {
+		return defaultValue
+	}
+
+	return value
+}
+
 func NewFlags() Flags {
 	f := Flags{}
-	f.Url = flag.String("url", "amqp://go1:go1@127.0.0.1:5672/", "")
-	f.Kind = flag.String("kind", "topic", "")
-	f.Exchange = flag.String("exchange", "events", "")
-	f.RoutingKey = flag.String("routing-key", "wip", "")
+	f.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
+	f.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
+	f.Exchange = flag.String("exchange", env("RABBITMQ_EXCHANGE", "events"), "")
+	f.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "wip"), "")
 	f.PrefetchCount = flag.Int("prefetch-count", 50, "")
 	f.PrefetchSize = flag.Int("prefetch-size", 0, "")
 	f.TickInterval = flag.Duration("tick-iterval", 5*time.Second, "")
-	f.QueueName = flag.String("queue-name", "a-wip", "")
-	f.ConsumerName = flag.String("consumer-name", "wip-rabbit-mq", "")
-	f.EsUrl = flag.String("es-url", "http://127.0.0.1:9200/?sniff=false", "")
+	f.QueueName = flag.String("queue-name", "es-writter", "")
+	f.ConsumerName = flag.String("consumer-name", "es-writter", "")
+	f.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
 	f.Debug = flag.Bool("debug", false, "")
 	flag.Parse()
 

@@ -17,13 +17,13 @@ import (
 func newFlagsForTest() Flags {
 	f := Flags{}
 
-	url := "amqp://go1:go1@127.0.0.1:5672/"
+	url := env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/")
 	f.Url = &url
-	kind := "topic"
+	kind := env("RABBITMQ_KIND", "topic")
 	f.Kind = &kind
-	exchange := "events"
+	exchange := env("RABBITMQ_EXCHANGE", "events")
 	f.Exchange = &exchange
-	routingKey := "wip"
+	routingKey := env("RABBITMQ_ROUTING_KEY", "qa")
 	f.RoutingKey = &routingKey
 	prefetchCount := 5
 	f.PrefetchCount = &prefetchCount
@@ -35,7 +35,7 @@ func newFlagsForTest() Flags {
 	f.QueueName = &queueName
 	ConsumerName := "es-writer-qa-consumer"
 	f.ConsumerName = &ConsumerName
-	esUrl := "http://127.0.0.1:9200/?sniff=false"
+	esUrl := env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false")
 	f.EsUrl = &esUrl
 	debug := true
 	f.Debug = &debug
@@ -226,7 +226,7 @@ func TestUpdate(t *testing.T) {
 	queue(ch, f, "indices/indices-drop.json")       // Delete index before testing
 	queue(ch, f, "indices/indices-create.json")     // create the index
 	queue(ch, f, "portal/portal-index.json")        // create portal object
-	queue(ch, f, "portal/portal-update.json")        // update portal object
+	queue(ch, f, "portal/portal-update.json")       // update portal object
 	defer queue(ch, f, "indices/indices-drop.json") // then, drop it.
 	waitForCompletion(watcher)                      // Wait a bit so that the message can be consumed.
 
