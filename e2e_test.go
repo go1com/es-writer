@@ -116,7 +116,7 @@ func TestIndicesCreate(t *testing.T) {
 	es, _ := f.ElasticSearchClient()
 	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es)
 	defer bulk.Close()
-	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk)
+	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk, *f.Debug)
 	go watcher.Watch(ctx, f)
 
 	removeIndex := func() {
@@ -156,7 +156,7 @@ func TestIndicesDelete(t *testing.T) {
 	es, _ := f.ElasticSearchClient()
 	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es)
 	defer bulk.Close()
-	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk)
+	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk, *f.Debug)
 	go watcher.Watch(ctx, f)
 
 	queue(ch, f, "indices/indices-create.json") // create the index
@@ -179,7 +179,7 @@ func TestCreate(t *testing.T) {
 	es, _ := f.ElasticSearchClient()
 	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es)
 	defer bulk.Close()
-	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk)
+	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk, *f.Debug)
 	go watcher.Watch(ctx, f)
 
 	queue(ch, f, "indices/indices-drop.json")   // Delete index before testing
@@ -202,7 +202,13 @@ func TestCreate(t *testing.T) {
 		Do(ctx)
 
 	source, _ := json.Marshal(res.Source)
-	if `{"title":"qa.mygo1.com"}` != string(source) {
+	correctTitle := strings.Contains(string(source), `"title":"qa.mygo1.com"`)
+	correctStatus := strings.Contains(string(source), `"status":1`)
+	if !correctTitle || !correctStatus {
 		t.Error("failed to load portal document")
 	}
 }
+
+
+// update_by_query
+// delete_by_query

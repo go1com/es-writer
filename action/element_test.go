@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"path"
 	"io/ioutil"
+	"strings"
 )
 
 func fileGetContent(filePath string) []byte {
@@ -23,12 +24,12 @@ func TestBulkCommandBuiler(t *testing.T) {
 
 	source, _ := e.Source()
 	command := source[0]
-	if command != `{"index":{"_index":"go1_qa","_type":"portal","_id":"111"}}` {
+	if command != `{"index":{"_index":"go1_qa","_routing":"go1_qa","_type":"portal","_id":"111"}}` {
 		t.Error("wrong command line")
 	}
 
 	body := source[1]
-	if body != `{"title":"qa.mygo1.com"}` {
+	if !strings.Contains(string(body), `"title":"qa.mygo1.com"`) {
 		t.Error("wrong body line")
 	}
 }

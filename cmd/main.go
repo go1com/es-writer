@@ -42,7 +42,7 @@ func main() {
 
 	// Watcher: Listen on rabbitMQ and dispatch actions to ElasticSearch
 	// ---------------------
-	watcher := es_writer.NewWatcher(ch, *flags.PrefetchCount, es, bulk)
+	watcher := es_writer.NewWatcher(ch, *flags.PrefetchCount, es, bulk, false)
 	logrus.
 		WithError(watcher.Watch(ctx, flags)).
 		Fatalln("Failed watching.")

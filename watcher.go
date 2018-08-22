@@ -12,6 +12,8 @@ import (
 )
 
 type Watcher struct {
+	debug bool
+
 	// RabbitMQ
 	ch      *amqp.Channel
 	actions *action.Container
@@ -22,8 +24,9 @@ type Watcher struct {
 	esBulk   *elastic.BulkProcessor
 }
 
-func NewWatcher(ch *amqp.Channel, count int, es *elastic.Client, bulk *elastic.BulkProcessor) *Watcher {
+func NewWatcher(ch *amqp.Channel, count int, es *elastic.Client, bulk *elastic.BulkProcessor, debug bool) *Watcher {
 	return &Watcher{
+		debug:    debug,
 		ch:       ch,
 		actions:  action.NewContainer(),
 		count:    count,
@@ -104,6 +107,11 @@ func (w *Watcher) onNewMessage(ctx context.Context, m amqp.Delivery) error {
 		}
 
 		return err
+	}
+
+	if w.debug {
+		logrus.Debugln("[actions.add]")
+		logrus.Debugln(element.String())
 	}
 
 	w.actions.Add(element)
