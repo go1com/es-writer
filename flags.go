@@ -41,7 +41,7 @@ func NewFlags() Flags {
 	f.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
 	f.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
 	f.Exchange = flag.String("exchange", env("RABBITMQ_EXCHANGE", "events"), "")
-	f.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "wip"), "")
+	f.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "es.writer.go1"), "")
 	f.PrefetchCount = flag.Int("prefetch-count", 50, "")
 	f.PrefetchSize = flag.Int("prefetch-size", 0, "")
 	f.TickInterval = flag.Duration("tick-iterval", 5*time.Second, "")

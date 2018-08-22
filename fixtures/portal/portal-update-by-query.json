@@ -1,0 +1,16 @@
+{
+  "uri": "/go1_qa/portal/_update_by_query",
+  "body": {
+    "query": {
+      "term": {
+        "id": 111
+      }
+    },
+    "script": {
+      "inline": "ctx._source.account.managers = params.managers",
+      "params": {
+        "managers": [1, 2, 3]
+      }
+    }
+  }
+}

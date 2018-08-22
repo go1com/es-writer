@@ -291,5 +291,10 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-// update_by_query
-// delete_by_query
+func TestUpdateByQuery(t *testing.T) {
+	// update_by_query
+}
+
+func TestDeleteByQuery(t *testing.T) {
+	// delete_by_query
+}
