@@ -1,4 +1,4 @@
-ES-Writer
+ES-Writer [![build status](https://code.go1.com.au/fn/es-writer/badges/master/build.svg)](https://code.go1.com.au/fn/es-writer/commits/master)
 ====
 
 Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
