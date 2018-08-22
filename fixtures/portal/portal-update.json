@@ -1,8 +1,8 @@
 {
-  "uri": "/go1_qa/portal/333/_update",
+  "uri": "/go1_qa/portal/111/_update?routing=go1_qa",
   "body": {
     "doc": {
-      "status": 1
+      "status": 0
     }
   }
 }

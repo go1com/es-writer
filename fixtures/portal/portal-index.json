@@ -1,6 +1,7 @@
 {
   "uri": "/go1_qa/portal/111/_create",
   "body": {
-    "title": "qa.mygo1.com"
+    "title": "qa.mygo1.com",
+    "status": 1
   }
 }

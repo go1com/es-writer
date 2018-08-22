@@ -21,6 +21,7 @@ func NewElement(deliveryTag uint64, raw []byte) (Element, error) {
 		fmt.Printf("Failed to parse e.uri: %s.\n", err.Error())
 	}
 
+	e.Uri = uri.Path
 	e.Routing = uri.Query().Get("routing")
 	e.Parent = uri.Query().Get("parent")
 	e.Refresh = uri.Query().Get("refresh") != "false"

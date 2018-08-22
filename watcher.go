@@ -94,6 +94,10 @@ func (w *Watcher) onNewMessage(ctx context.Context, m amqp.Delivery) error {
 	// Not all requests are bulkable
 	requestType := element.RequestType()
 	if "bulkable" != requestType {
+		if w.actions.Length() > 0 {
+			w.flush()
+		}
+
 		err = w.handleUnBulkableAction(ctx, requestType, element)
 		if err == nil {
 			w.ch.Ack(m.DeliveryTag, true)
@@ -113,10 +117,6 @@ func (w *Watcher) onNewMessage(ctx context.Context, m amqp.Delivery) error {
 func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string, element action.Element) error {
 	switch requestType {
 	case "update_by_query":
-		if w.actions.Length() > 0 {
-			w.flush()
-		}
-
 		service, err := element.UpdateByQueryService(w.esClient)
 		if err != nil {
 			_, err := service.Do(ctx)
