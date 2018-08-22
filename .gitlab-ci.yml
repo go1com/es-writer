@@ -1,5 +1,8 @@
+stages: ["test", "build"]
+
 test:
   image: registry.code.go1.com.au/go1/docker:golang
+  type: test
   except: ["production"]
   tags: ["aws"]
   services:
@@ -12,20 +15,44 @@ test:
     RABBITMQ_ROUTING_KEY: "es.writer.go1"
     ELASTIC_SEARCH_URL: "http://elasticsearch:9200/?sniff=false"
   script:
-    # Build code base
-    # ---------------------
-    - mkdir -p $GOPATH/src/go1/es-writer
-    - cp -Rf $(pwd)/* $GOPATH/src/go1/es-writer/
-    - cd $GOPATH/src/go1/es-writer
-    - dep ensure
+  # Get full source code
+  # ---------------------
+  - mkdir -p $GOPATH/src/go1/es-writer
+  - cp -Rf $(pwd)/* $GOPATH/src/go1/es-writer/
+  - cd $GOPATH/src/go1/es-writer
+  - dep ensure
 
-    # Wait for servers to be started
-    # ---------------------
-    - curl -sSL -o wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
-    - chmod +x ./wait-for-it.sh
-    - ./wait-for-it.sh -t 0 rabbitmq:5672
-    - ./wait-for-it.sh -t 0 elasticsearch:9200
+  # Wait for servers to be started
+  # ---------------------
+  - curl -sSL -o wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
+  - chmod +x ./wait-for-it.sh
+  - ./wait-for-it.sh -t 0 rabbitmq:5672
+  - ./wait-for-it.sh -t 0 elasticsearch:9200
 
-    # Start testing
-    # ---------------------
-    - go test -cover ./...
+  # Start testing
+  # ---------------------
+  - go test -cover ./...
+
+build:
+  image: registry.code.go1.com.au/go1/docker:golang
+  type: build
+  tags: ["aws"]
+  artifacts: { paths: ["artifacts"] }
+  script:
+  # Directory to store build result
+  # ---------------------
+  - mkdir -p $CI_PROJECT_DIR/artifacts
+
+  # Get full source code
+  # ---------------------
+  - mkdir -p $GOPATH/src/go1/es-writer
+  - cp -Rf $(pwd)/* $GOPATH/src/go1/es-writer/
+  - cd $GOPATH/src/go1/es-writer
+  - dep ensure
+
+  # Start building
+  # ---------------------
+  - env GOOS=linux GOARCH=386
+    go build
+    -o $CI_PROJECT_DIR/artifacts/app
+    $GOPATH/src/go1/es-writer/cmd/main.go
