@@ -10,6 +10,7 @@ import (
 
 func NewElement(deliveryTag uint64, raw []byte) (Element, error) {
 	e := Element{}
+	e.DeliveryTag = deliveryTag
 	err := json.Unmarshal(raw, &e)
 	if err != nil {
 		return e, fmt.Errorf("failed to parse e: %s", err.Error())

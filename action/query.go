@@ -48,7 +48,8 @@ func NewCommand(e Element) Command {
 }
 
 func (cmd Command) String(key string) string {
-	output, _ := json.Marshal(cmd)
+	slice := map[string]Command{key: cmd}
+	output, _ := json.Marshal(slice)
 
 	return string(output)
 }

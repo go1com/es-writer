@@ -41,9 +41,24 @@ func newFlagsForTest() Flags {
 	return f
 }
 
+func waitForCompletion(w *Watcher) {
+	time.Sleep(2 * time.Second)
+
+	for {
+		units := w.UnitWorks()
+		if 0 == units {
+			break
+		} else {
+			logrus.Infof("Remaining actions: %d\n", units)
+		}
+
+		time.Sleep(2 * time.Second)
+	}
+}
+
 func queue(ch *amqp.Channel, f Flags, file string) {
 	err := ch.Publish(*f.Exchange, *f.RoutingKey, false, false, amqp.Publishing{
-		Body: realpath(file),
+		Body: fileGetContent(file),
 	})
 
 	if err != nil {
@@ -51,7 +66,7 @@ func queue(ch *amqp.Channel, f Flags, file string) {
 	}
 }
 
-func realpath(filePath string) []byte {
+func fileGetContent(filePath string) []byte {
 	_, currentFileName, _, _ := runtime.Caller(1)
 	filePath = path.Dir(currentFileName) + "/fixtures/" + filePath
 	body, _ := ioutil.ReadFile(filePath)
@@ -98,6 +113,7 @@ func TestIndicesCreate(t *testing.T) {
 	defer ch.Close()
 	es, _ := f.ElasticSearchClient()
 	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es)
+	defer bulk.Close()
 	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk)
 	go watcher.Watch(ctx, f)
 
@@ -110,17 +126,7 @@ func TestIndicesCreate(t *testing.T) {
 	removeIndex()                               // Delete index before testing
 	defer removeIndex()                         // Clean up index after testing
 	queue(ch, f, "indices/indices-create.json") // queue a message to rabbitMQ
-	time.Sleep(2 * time.Second)                 // Wait a bit so that the message can be consumed.
-	for {
-		units := watcher.UnitWorks()
-		if 0 == units {
-			break
-		} else {
-			logrus.Infoln("Remaining actions: %d", units)
-		}
-
-		time.Sleep(1 * time.Second)
-	}
+	waitForCompletion(watcher)                  // Wait a bit so that the message can be consumed.
 
 	res, err := elastic.NewIndicesGetService(es).
 		Index("go1_qa").
@@ -147,24 +153,20 @@ func TestIndicesDelete(t *testing.T) {
 	defer ch.Close()
 	es, _ := f.ElasticSearchClient()
 	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es)
+	defer bulk.Close()
 	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk)
 	go watcher.Watch(ctx, f)
 
 	queue(ch, f, "indices/indices-create.json") // create the index
 	queue(ch, f, "indices/indices-drop.json")   // then, drop it.
+	waitForCompletion(watcher)                  // Wait a bit so that the message can be consumed.
 
-	// Wait a bit so that the message can be consumed.
-	time.Sleep(2 * time.Second)
-	for {
-		units := watcher.UnitWorks()
-		if 0 == units {
-			break
-		} else {
-			logrus.Infoln("Remaining actions: %d", units)
-		}
-
-		time.Sleep(1 * time.Second)
+	_, err := elastic.NewIndicesGetService(es).Index("go1_qa").Do(ctx)
+	if !strings.Contains(err.Error(), "[type=index_not_found_exception]") {
+		t.Fatal("Index is not deleted successfully.")
 	}
+}
+
 
 	_, err := elastic.NewIndicesGetService(es).Index("go1_qa").Do(ctx)
 	if !strings.Contains(err.Error(), "[type=index_not_found_exception]") {
