@@ -17,26 +17,28 @@ import (
 func newFlagsForTest() Flags {
 	f := Flags{}
 
-	Url := "amqp://go1:go1@127.0.0.1:5672/"
-	f.Url = &Url
-	Kind := "topic"
-	f.Kind = &Kind
-	Exchange := "events"
-	f.Exchange = &Exchange
-	RoutingKey := "wip"
-	f.RoutingKey = &RoutingKey
-	PrefetchCount := 5
-	f.PrefetchCount = &PrefetchCount
-	PrefetchSize := 0
-	f.PrefetchSize = &PrefetchSize
-	TickInterval := 3 * time.Second
-	f.TickInterval = &TickInterval
-	QueueName := "es-writer-qa"
-	f.QueueName = &QueueName
+	url := "amqp://go1:go1@127.0.0.1:5672/"
+	f.Url = &url
+	kind := "topic"
+	f.Kind = &kind
+	exchange := "events"
+	f.Exchange = &exchange
+	routingKey := "wip"
+	f.RoutingKey = &routingKey
+	prefetchCount := 5
+	f.PrefetchCount = &prefetchCount
+	prefetchSize := 0
+	f.PrefetchSize = &prefetchSize
+	tickInterval := 3 * time.Second
+	f.TickInterval = &tickInterval
+	queueName := "es-writer-qa"
+	f.QueueName = &queueName
 	ConsumerName := "es-writer-qa-consumer"
 	f.ConsumerName = &ConsumerName
-	EsUrl := "http://127.0.0.1:9200/?sniff=false"
-	f.EsUrl = &EsUrl
+	esUrl := "http://127.0.0.1:9200/?sniff=false"
+	f.EsUrl = &esUrl
+	debug := true
+	f.Debug = &debug
 
 	return f
 }
@@ -167,9 +169,40 @@ func TestIndicesDelete(t *testing.T) {
 	}
 }
 
+func TestCreate(t *testing.T) {
+	ctx := context.Background()
+	f := newFlagsForTest()
+	con, _ := f.RabbitMqConnection()
+	defer con.Close()
+	ch, _ := f.RabbitMqChannel(con)
+	defer ch.Close()
+	es, _ := f.ElasticSearchClient()
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es)
+	defer bulk.Close()
+	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk)
+	go watcher.Watch(ctx, f)
 
-	_, err := elastic.NewIndicesGetService(es).Index("go1_qa").Do(ctx)
-	if !strings.Contains(err.Error(), "[type=index_not_found_exception]") {
-		t.Fatal("Index is not deleted successfully.")
+	queue(ch, f, "indices/indices-drop.json")   // Delete index before testing
+	queue(ch, f, "indices/indices-create.json") // create the index
+	queue(ch, f, "portal/portal-index.json")    // create portal object
+	queue(ch, f, "indices/indices-drop.json")   // then, drop it.
+	waitForCompletion(watcher)                  // Wait a bit so that the message can be consumed.
+
+	stats := bulk.Stats()
+	if stats.Succeeded == 0 {
+		t.Error("action failed to process")
+	}
+
+	res, _ := elastic.
+		NewGetService(es).
+		Index("go1_qa").
+		Type("portal").
+		Id("111").
+		FetchSource(true).
+		Do(ctx)
+
+	source, _ := json.Marshal(res.Source)
+	if `{"title":"qa.mygo1.com"}` != string(source) {
+		t.Error("failed to load portal document")
 	}
 }

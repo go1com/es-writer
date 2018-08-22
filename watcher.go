@@ -177,9 +177,6 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string
 }
 
 func (w *Watcher) flush() {
-	// TODO: Don't call this when it's processing.
-	// ---------------------
-
 	deliveryTags := []uint64{}
 	for _, element := range w.actions.Elements() {
 		deliveryTags = append(deliveryTags, element.DeliveryTag)
@@ -188,10 +185,16 @@ func (w *Watcher) flush() {
 
 	err := w.esBulk.Flush()
 	if err != nil {
+		logrus.WithError(err).Errorln("failed flushing")
+	}
+
+	if err == nil {
 		for _, deliveryTag := range deliveryTags {
 			w.ch.Ack(deliveryTag, true)
 		}
 
 		w.actions.Clear()
+	} else {
+		// WHAT IF FAILED?
 	}
 }

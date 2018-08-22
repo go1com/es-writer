@@ -22,6 +22,7 @@ type Flags struct {
 	QueueName     *string
 	ConsumerName  *string
 	EsUrl         *string
+	Debug         *bool
 }
 
 func NewFlags() Flags {
@@ -36,6 +37,7 @@ func NewFlags() Flags {
 	f.QueueName = flag.String("queue-name", "a-wip", "")
 	f.ConsumerName = flag.String("consumer-name", "wip-rabbit-mq", "")
 	f.EsUrl = flag.String("es-url", "http://127.0.0.1:9200/?sniff=false", "")
+	f.Debug = flag.Bool("debug", false, "")
 	flag.Parse()
 
 	return f
@@ -108,16 +110,16 @@ func (f *Flags) ElasticSearchClient() (*elastic.Client, error) {
 }
 
 func (f *Flags) ElasticSearchBulkProcessor(ctx context.Context, client *elastic.Client) (*elastic.BulkProcessor, error) {
-	processor, err := elastic.
+	service := elastic.
 		NewBulkProcessorService(client).
 		Name("es-writter").
 		Stats(true).
 		FlushInterval(2 * time.Second).
 		BulkActions(20).
 		Workers(1).
-		Stats(false).
-		Do(ctx)
+		Stats(*f.Debug)
 
+	processor, err := service.Do(ctx)
 	if err != nil {
 		return nil, err
 	}
