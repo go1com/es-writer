@@ -182,11 +182,11 @@ func TestCreate(t *testing.T) {
 	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk, *f.Debug)
 	go watcher.Watch(ctx, f)
 
-	queue(ch, f, "indices/indices-drop.json")   // Delete index before testing
-	queue(ch, f, "indices/indices-create.json") // create the index
-	queue(ch, f, "portal/portal-index.json")    // create portal object
-	queue(ch, f, "indices/indices-drop.json")   // then, drop it.
-	waitForCompletion(watcher)                  // Wait a bit so that the message can be consumed.
+	queue(ch, f, "indices/indices-drop.json")       // Delete index before testing
+	queue(ch, f, "indices/indices-create.json")     // create the index
+	queue(ch, f, "portal/portal-index.json")        // create portal object
+	defer queue(ch, f, "indices/indices-drop.json") // then, drop it.
+	waitForCompletion(watcher)                      // Wait a bit so that the message can be consumed.
 
 	stats := bulk.Stats()
 	if stats.Succeeded == 0 {
@@ -196,6 +196,7 @@ func TestCreate(t *testing.T) {
 	res, _ := elastic.
 		NewGetService(es).
 		Index("go1_qa").
+		Routing("go1_qa").
 		Type("portal").
 		Id("111").
 		FetchSource(true).
@@ -208,7 +209,6 @@ func TestCreate(t *testing.T) {
 		t.Error("failed to load portal document")
 	}
 }
-
 
 // update_by_query
 // delete_by_query
