@@ -25,7 +25,7 @@ func NewElement(deliveryTag uint64, raw []byte) (Element, error) {
 	e.Uri = uri.Path
 	e.Routing = uri.Query().Get("routing")
 	e.Parent = uri.Query().Get("parent")
-	e.Refresh = uri.Query().Get("refresh") != "false"
+	e.Refresh = uri.Query().Get("refresh")
 	e.WaitForCompletion = uri.Query().Get("wait_for_completion") != "false"
 
 	retryOnConflict := uri.Query().Get("retry_on_conflict")

@@ -18,7 +18,7 @@ type Element struct {
 	Body              interface{} `json:"body"`
 	Routing           string
 	Parent            string
-	Refresh           bool
+	Refresh           string
 	WaitForCompletion bool
 	RetryOnConflict   int    // only available for create, update
 	Conflict          string // only available for update_by_query
@@ -150,8 +150,8 @@ func (e *Element) DeleteByQueryService(client *elastic.Client) (*elastic.DeleteB
 		req.Type(e.DocType)
 	}
 
-	if e.Refresh {
-		req.Refresh("yes")
+	if e.Refresh != "" {
+		req.Refresh(e.Refresh)
 	}
 
 	if e.Conflict != "" {

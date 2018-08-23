@@ -1,5 +1,5 @@
 {
-  "uri": "/go1_qa/portal/111/_update?routing=go1_qa",
+  "uri": "/go1_qa/portal/111/_update?routing=go1_qa&refresh=wait_for",
   "body": {
     "doc": {
       "status": 0

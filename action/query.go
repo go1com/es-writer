@@ -34,6 +34,7 @@ type Command struct {
 	Type           string `json:"_type,omitempty"`
 	Id             string `json:"_id,omitempty"`
 	RetryOnConfict int    `json:"_retry_on_conflict,omitempty"`
+	Refresh        string `json:"_refresh,omitempty"`
 }
 
 func NewCommand(e Element) Command {
@@ -44,6 +45,7 @@ func NewCommand(e Element) Command {
 		Type:           e.DocType,
 		Id:             e.DocId,
 		RetryOnConfict: e.RetryOnConflict,
+		Refresh:        e.Refresh,
 	}
 }
 

@@ -38,13 +38,11 @@ func TestCreateUpdateRequest(t *testing.T) {
 	e, err := NewElement(0, fileGetContent("portal/portal-update.json"))
 	if err != nil {
 		t.Fatalf("failed to create element: %s.", err.Error())
-	} else {
-
 	}
 
 	source, _ := e.Source()
 	command := source[0]
-	if command != `{"update":{"_index":"go1_qa","_routing":"go1_qa","_type":"portal","_id":"111"}}` {
+	if command != `{"update":{"_index":"go1_qa","_routing":"go1_qa","_type":"portal","_id":"111","_refresh":"wait_for"}}` {
 		t.Error("wrong command line")
 	}
 
