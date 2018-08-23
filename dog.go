@@ -59,7 +59,7 @@ func (w *Dog) Watch(ctx context.Context, flags Flags) (error) {
 				continue
 			}
 
-			err := w.onNewMessage(ctx, m)
+			err := w.woof(ctx, m)
 			if err != nil {
 				logrus.WithError(err).Errorln("Failed to handle new message: " + string(m.Body))
 			}
@@ -88,7 +88,7 @@ func (w *Dog) messages(flags Flags) (<-chan amqp.Delivery, error) {
 	return messages, nil
 }
 
-func (w *Dog) onNewMessage(ctx context.Context, m amqp.Delivery) error {
+func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 	element, err := action.NewElement(m.DeliveryTag, m.Body)
 	if err != nil {
 		return err
