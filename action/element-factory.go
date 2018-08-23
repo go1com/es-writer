@@ -69,7 +69,10 @@ func NewElement(deliveryTag uint64, raw []byte) (Element, error) {
 			strings.Split(e.Uri, "/")
 			switch {
 			case strings.HasSuffix(e.Uri, "/_delete_by_query"):
-				e.Index = uriChunks[1] // URI pattern: /go1_dev/_delete_by_query
+				e.Index = uriChunks[1] // URI pattern: /go1_dev/_delete_by_query or /go1_dev/portal/_delete_by_query
+				if uriChunks[2] != "_delete_by_query" {
+					e.DocType = uriChunks[2]
+				}
 
 			case strings.HasSuffix(e.Uri, "/_update_by_query"):
 				e.Index = uriChunks[1]

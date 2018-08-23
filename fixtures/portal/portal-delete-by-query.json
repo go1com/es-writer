@@ -3,10 +3,8 @@
   "uri": "/go1_qa/portal/_delete_by_query?refresh=true&wait_for_completion=true",
   "body": {
     "query": {
-      "query": {
-        "term": {
-          "status": 0
-        }
+      "term": {
+        "_id": 111
       }
     }
   }

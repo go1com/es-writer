@@ -348,5 +348,31 @@ func TestUpdateByQuery(t *testing.T) {
 }
 
 func TestDeleteByQuery(t *testing.T) {
-	// delete_by_query
+	ctx := context.Background()
+	f := flags()
+	con, _ := f.RabbitMqConnection(); defer con.Close()
+	ch, _ := f.RabbitMqChannel(con); defer ch.QueuePurge(*f.QueueName, false)
+	es, _ := f.ElasticSearchClient(); defer elastic.NewIndicesDeleteService(es).Index([]string{"go1_qa"}).Do(ctx)
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es); defer bulk.Close()
+	dog := NewDog(ch, *f.PrefetchCount, es, bulk, *f.Debug)
+	go dog.Start(ctx, f)
+	time.Sleep(3 * time.Second)
+
+	queue(ch, f, "indices/indices-create.json")        // create the index
+	queue(ch, f, "portal/portal-index.json")           // create portal, status is 1
+	queue(ch, f, "portal/portal-delete-by-query.json") // update portal status to 0
+	stand(dog)                                         // Wait a bit so that the message can be consumed.
+
+	_, err := elastic.
+		NewGetService(dog.es).
+		Index("go1_qa").
+		Routing("go1_qa").
+		Type("portal").
+		Id("111").
+		FetchSource(true).
+		Do(ctx)
+
+	if !strings.Contains(err.Error(), "Error 404 (Not Found)") {
+		t.Error("failed to delete portal document")
+	}
 }

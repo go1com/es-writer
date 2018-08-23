@@ -126,7 +126,6 @@ func (f *Flags) ElasticSearchBulkProcessor(ctx context.Context, client *elastic.
 		Name("es-writter").
 		Stats(true).
 		FlushInterval(2 * time.Second).
-		BulkActions(20).
 		Workers(1).
 		Stats(*f.Debug)
 

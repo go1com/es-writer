@@ -109,7 +109,7 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 	}
 
 	if w.debug {
-		logrus.Debugln("[woof] bulkable action: ", w.actions.Length() + 1)
+		logrus.Debugln("[woof] bulkable action: ", w.actions.Length()+1)
 	}
 
 	w.actions.Add(element)
@@ -146,9 +146,23 @@ func (w *Dog) woooof(ctx context.Context, requestType string, element action.Ele
 	case "delete_by_query":
 		service, err := element.DeleteByQueryService(w.es)
 		if err != nil {
-			_, err := service.Do(ctx)
 			return err
 		}
+
+		conflictRetryIntervals := []time.Duration{1 * time.Second, 2 * time.Second, 3 * time.Second, 7 * time.Second, 0}
+		for _, conflictRetryInterval := range conflictRetryIntervals {
+			_, err = service.Do(ctx)
+			if err == nil {
+				break
+			}
+
+			if strings.Contains(err.Error(), "Error 409 (Conflict)") {
+				logrus.WithError(err).Errorf("deleting has conflict; try again in %s.\n", conflictRetryInterval)
+				time.Sleep(conflictRetryInterval)
+			}
+		}
+
+		return err
 
 	case "indices_create":
 		service, err := element.IndicesCreateService(w.es)

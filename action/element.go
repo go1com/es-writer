@@ -134,26 +134,24 @@ func (e *Element) UpdateByQueryService(client *elastic.Client) (*elastic.UpdateB
 }
 
 func (e *Element) DeleteByQueryService(client *elastic.Client) (*elastic.DeleteByQueryService, error) {
-	req := client.DeleteByQuery()
+	service := client.
+		DeleteByQuery().
+		Index(e.Index).
+		WaitForCompletion(true).
+		Refresh("wait_for").
+		Conflicts("proceed")
 
 	if e.Routing != "" {
-		req.Routing(e.Routing)
+		service.Routing(e.Routing)
 	}
 
 	if e.DocType != "" {
-		req.Type(e.DocType)
+		service.Type(e.DocType)
 	}
 
-	if e.Refresh != "" {
-		req.Refresh(e.Refresh)
-	}
+	source, _ := NewSimpleQuery(e.Body).Source()
+	body, _ := json.Marshal(source)
+	service.Body(string(body))
 
-	if e.Conflict != "" {
-		req.Conflicts(e.Conflict)
-	}
-
-	q := NewSimpleQuery(e.Body)
-	req.Query(q)
-
-	return req, nil
+	return service, nil
 }
