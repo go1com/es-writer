@@ -16,7 +16,7 @@ import (
 	"fmt"
 )
 
-func newFlagsForTest() Flags {
+func flags() Flags {
 	f := Flags{}
 
 	url := env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/")
@@ -45,7 +45,7 @@ func newFlagsForTest() Flags {
 	return f
 }
 
-func standBy(w *Dog) {
+func stand(w *Dog) {
 	time.Sleep(2 * time.Second)
 	defer time.Sleep(5 * time.Second)
 
@@ -63,7 +63,7 @@ func standBy(w *Dog) {
 
 func queue(ch *amqp.Channel, f Flags, file string) {
 	err := ch.Publish(*f.Exchange, *f.RoutingKey, false, false, amqp.Publishing{
-		Body: fileGetContent(file),
+		Body: fixture(file),
 	})
 
 	if err != nil {
@@ -71,7 +71,7 @@ func queue(ch *amqp.Channel, f Flags, file string) {
 	}
 }
 
-func fileGetContent(filePath string) []byte {
+func fixture(filePath string) []byte {
 	_, currentFileName, _, _ := runtime.Caller(1)
 	filePath = path.Dir(currentFileName) + "/fixtures/" + filePath
 	body, _ := ioutil.ReadFile(filePath)
@@ -81,7 +81,7 @@ func fileGetContent(filePath string) []byte {
 
 func start() (*Dog, context.Context, Flags, chan bool) {
 	ctx := context.Background()
-	f := newFlagsForTest()
+	f := flags()
 
 	// RabbitMQ connection & flush messages
 	con, _ := f.RabbitMqConnection()
@@ -113,7 +113,7 @@ func start() (*Dog, context.Context, Flags, chan bool) {
 
 func TestFlags(t *testing.T) {
 	ctx := context.Background()
-	f := newFlagsForTest()
+	f := flags()
 	con, err := f.RabbitMqConnection()
 	if err != nil {
 		t.Fatalf("failed to make rabbitMQ connection: %s", err.Error())
@@ -146,7 +146,7 @@ func TestIndicesCreate(t *testing.T) {
 	defer func() { stop <- true }()
 
 	queue(dog.ch, f, "indices/indices-create.json") // queue a message to rabbitMQ
-	standBy(dog)                                    // Wait a bit so that the message can be consumed.
+	stand(dog)                                      // Wait a bit so that the message can be consumed.
 
 	res, err := elastic.NewIndicesGetService(dog.es).Index("go1_qa").Do(ctx)
 	if err != nil {
@@ -167,7 +167,7 @@ func TestIndicesDelete(t *testing.T) {
 
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
 	queue(dog.ch, f, "indices/indices-drop.json")   // then, drop it.
-	standBy(dog)                                    // Wait a bit so that the message can be consumed.
+	stand(dog)                                      // Wait a bit so that the message can be consumed.
 
 	_, err := elastic.NewIndicesGetService(dog.es).Index("go1_qa").Do(ctx)
 	if !strings.Contains(err.Error(), "[type=index_not_found_exception]") {
@@ -181,7 +181,7 @@ func TestBulkCreate(t *testing.T) {
 
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
 	queue(dog.ch, f, "portal/portal-index.json")    // create portal object
-	standBy(dog)                                    // Wait a bit so that the message can be consumed.
+	stand(dog)                                      // Wait a bit so that the message can be consumed.
 
 	stats := dog.bulk.Stats()
 	if stats.Succeeded == 0 {
@@ -215,7 +215,7 @@ func TestBulkUpdate(t *testing.T) {
 	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
 	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
 	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-	standBy(dog)                                    // Wait a bit so that the message can be consumed.
+	stand(dog)                                      // Wait a bit so that the message can be consumed.
 
 	stats := dog.bulk.Stats()
 	if stats.Succeeded == 0 {
@@ -258,7 +258,7 @@ func TestBulkUpdateConflict(t *testing.T) {
 	// Create the portal first.
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
 	queue(dog.ch, f, "portal/portal-index.json")    // portal.status = 1
-	standBy(dog)
+	stand(dog)
 
 	fixtures := []string{
 		"portal/portal-update.json",
@@ -278,7 +278,7 @@ func TestBulkUpdateConflict(t *testing.T) {
 		}
 
 		queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-		standBy(dog)
+		stand(dog)
 		portal := load()
 		if !strings.Contains(portal, `"status":4`) {
 			t.Error("failed to load portal document")
@@ -293,7 +293,7 @@ func TestBulkableDelete(t *testing.T) {
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
 	queue(dog.ch, f, "portal/portal-index.json")    // create portal object
 	queue(dog.ch, f, "portal/portal-delete.json")   // update portal object
-	standBy(dog)                                    // Wait a bit so that the message can be consumed.
+	stand(dog)                                      // Wait a bit so that the message can be consumed.
 
 	stats := dog.bulk.Stats()
 	if stats.Succeeded == 0 {
@@ -322,7 +322,7 @@ func TestUpdateByQuery(t *testing.T) {
 	queue(dog.ch, f, "portal/portal-index.json")           // create portal, status is 1
 	queue(dog.ch, f, "portal/portal-update.json")          // update portal status to 0
 	queue(dog.ch, f, "portal/portal-update-by-query.json") // update portal status to 2
-	standBy(dog)                                           // Wait a bit so that the message can be consumed.
+	stand(dog)                                             // Wait a bit so that the message can be consumed.
 
 	res, err := elastic.
 		NewGetService(dog.es).
