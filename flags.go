@@ -4,7 +4,7 @@ import (
 	"flag"
 	"time"
 	"github.com/streadway/amqp"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"fmt"
 	"gopkg.in/olivere/elastic.v5"
 	"gopkg.in/olivere/elastic.v5/config"

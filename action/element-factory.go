@@ -11,14 +11,15 @@ import (
 func NewElement(deliveryTag uint64, raw []byte) (Element, error) {
 	e := Element{}
 	e.DeliveryTag = deliveryTag
+
 	err := json.Unmarshal(raw, &e)
 	if err != nil {
-		return e, fmt.Errorf("failed to parse e: %s", err.Error())
+		return e, fmt.Errorf("failed to parse element body: %s", err.Error())
 	}
 
 	uri, err := url.Parse(e.Uri)
 	if err != nil {
-		fmt.Printf("Failed to parse e.uri: %s.\n", err.Error())
+		return e, fmt.Errorf("failed to parse e.uri: %s", err.Error())
 	}
 
 	e.Uri = uri.Path
@@ -35,7 +36,7 @@ func NewElement(deliveryTag uint64, raw []byte) (Element, error) {
 		}
 	}
 
-	conflict := uri.Query().Get("conflict");
+	conflict := uri.Query().Get("conflict")
 	if conflict != "" {
 		e.Conflict = conflict
 	}

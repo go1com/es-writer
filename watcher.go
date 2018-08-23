@@ -7,7 +7,7 @@ import (
 	"time"
 	"gopkg.in/olivere/elastic.v5"
 	"fmt"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -127,8 +127,6 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string
 	case "update_by_query":
 		service, err := element.UpdateByQueryService(w.esClient)
 		if err != nil {
-			_, err := service.Do(ctx)
-
 			return err
 		}
 
@@ -153,7 +151,6 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				logrus.WithError(err).Errorln("That's ok if the index is existing.")
-
 				return nil
 			}
 		}
@@ -170,7 +167,6 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string
 		if err != nil {
 			if strings.Contains(err.Error(), "[type=index_not_found_exception]") {
 				logrus.WithError(err).Infoln("That's ok if the index is not existing, already deleted somewhere.")
-
 				return nil
 			}
 		}

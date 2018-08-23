@@ -1,15 +1,15 @@
 {
-  "uri": "/go1_qa/portal/_update_by_query",
+  "uri": "/go1_qa/portal/_update_by_query?routing=go1_qa",
   "body": {
     "query": {
       "term": {
-        "id": 111
+        "_id": 111
       }
     },
     "script": {
-      "inline": "ctx._source.account.managers = params.managers",
+      "inline": "ctx._source.status = params.status",
       "params": {
-        "managers": [1, 2, 3]
+        "status": 2
       }
     }
   }

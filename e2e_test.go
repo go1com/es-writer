@@ -7,7 +7,7 @@ import (
 	"gopkg.in/olivere/elastic.v5"
 	"encoding/json"
 	"github.com/streadway/amqp"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"runtime"
 	"path"
 	"io/ioutil"

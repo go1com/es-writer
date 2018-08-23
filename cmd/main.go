@@ -2,7 +2,7 @@ package main
 
 import (
 	"go1/es-writer"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"context"
 )
 
