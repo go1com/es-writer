@@ -39,7 +39,7 @@ func (w *Dog) UnitWorks() int {
 	return w.actions.Length()
 }
 
-func (w *Dog) Watch(ctx context.Context, flags Flags) (error) {
+func (w *Dog) Start(ctx context.Context, flags Flags) (error) {
 	ticker := time.NewTicker(*flags.TickInterval)
 	messages, err := w.messages(flags)
 	if err != nil {

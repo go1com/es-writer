@@ -92,7 +92,7 @@ func start() (*Dog, context.Context, Flags, chan bool) {
 	elastic.NewIndicesDeleteService(es).Index([]string{"go1_qa"}).Do(ctx)
 
 	dog := NewDog(ch, *f.PrefetchCount, es, bulk, *f.Debug)
-	go dog.Watch(ctx, f)
+	go dog.Start(ctx, f)
 
 	stop := make(chan bool)
 	go func() {

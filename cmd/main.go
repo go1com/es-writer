@@ -44,6 +44,6 @@ func main() {
 	// ---------------------
 	dog := es_writer.NewDog(ch, *flags.PrefetchCount, es, bulk, false)
 	logrus.
-		WithError(dog.Watch(ctx, flags)).
+		WithError(dog.Start(ctx, flags)).
 		Fatalln("Failed watching.")
 }
