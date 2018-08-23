@@ -45,6 +45,7 @@ func newFlagsForTest() Flags {
 
 func waitForCompletion(w *Watcher) {
 	time.Sleep(2 * time.Second)
+	defer time.Sleep(2 * time.Second)
 
 	for {
 		units := w.UnitWorks()
@@ -292,7 +293,54 @@ func TestDelete(t *testing.T) {
 }
 
 func TestUpdateByQuery(t *testing.T) {
-	// update_by_query
+	ctx := context.Background()
+	f := newFlagsForTest()
+	con, _ := f.RabbitMqConnection()
+	defer con.Close()
+	ch, _ := f.RabbitMqChannel(con)
+	defer ch.Close()
+	es, _ := f.ElasticSearchClient()
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es)
+	defer bulk.Close()
+	watcher := NewWatcher(ch, *f.PrefetchCount, es, bulk, *f.Debug)
+	go watcher.Watch(ctx, f)
+
+	defer func() {
+		elastic.
+			NewIndicesDeleteService(es).
+			Index([]string{"go1_qa"}).
+			Do(ctx)
+
+		time.Sleep(2 * time.Second)
+	}()
+
+	ch.QueuePurge(*f.QueueName, false)
+	queue(ch, f, "indices/indices-create.json")        // create the index
+	queue(ch, f, "portal/portal-index.json")           // create portal, status is 1
+	queue(ch, f, "portal/portal-update.json")          // update portal status to 0
+	queue(ch, f, "portal/portal-update-by-query.json") // update portal status to 2
+	waitForCompletion(watcher)                         // Wait a bit so that the message can be consumed.
+
+	res, err := elastic.
+		NewGetService(es).
+		Index("go1_qa").
+		Routing("go1_qa").
+		Type("portal").
+		Id("111").
+		FetchSource(true).
+		Do(ctx)
+
+	if err != nil {
+		logrus.WithError(err).Fatalln("failed loading")
+	} else {
+		source, _ := json.Marshal(res.Source)
+		correctTitle := strings.Contains(string(source), `"title":"qa.mygo1.com"`)
+		correctStatus := strings.Contains(string(source), `"status":2`)
+
+		if !correctTitle || !correctStatus {
+			t.Error("failed to update portal document")
+		}
+	}
 }
 
 func TestDeleteByQuery(t *testing.T) {

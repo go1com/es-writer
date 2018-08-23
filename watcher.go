@@ -130,11 +130,22 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string
 			return err
 		}
 
-	case "delete_by_query":
-		if w.actions.Length() > 0 {
-			w.flush()
+		conflictRetryIntervals := []time.Duration{1 * time.Second, 2 * time.Second, 3 * time.Second, 7 * time.Second, 0}
+		for _, conflictRetryInterval := range conflictRetryIntervals {
+			_, err = service.Do(ctx)
+			if err == nil {
+				break
+			}
+
+			if strings.Contains(err.Error(), "Error 409 (Conflict)") {
+				logrus.WithError(err).Errorf("writing on conflict; try again in %s.\n", conflictRetryInterval)
+				time.Sleep(conflictRetryInterval)
+			}
 		}
 
+		return err
+
+	case "delete_by_query":
 		service, err := element.DeleteByQueryService(w.esClient)
 		if err != nil {
 			_, err := service.Do(ctx)

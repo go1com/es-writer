@@ -115,28 +115,22 @@ func (e *Element) IndicesDeleteService(client *elastic.Client) (*elastic.Indices
 }
 
 func (e *Element) UpdateByQueryService(client *elastic.Client) (*elastic.UpdateByQueryService, error) {
-	req := client.UpdateByQuery(e.Index)
+	service := client.UpdateByQuery(e.Index)
+	service.
+		Index(e.Index).
+		Type(e.DocType).
+		WaitForCompletion(true).
+		Refresh("wait_for")
 
 	if e.Routing != "" {
-		req.Routing(e.Routing)
+		service.Routing(e.Routing)
 	}
 
-	if e.DocType != "" {
-		req.Type(e.DocType)
-	}
+	source, _ := NewSimpleQuery(e.Body).Source()
+	body, _ := json.Marshal(source)
+	service.Body(string(body))
 
-	if e.Refresh {
-		req.Refresh("yes")
-	}
-
-	if e.Conflict != "" {
-		req.Conflicts(e.Conflict)
-	}
-
-	q := NewSimpleQuery(e.Body)
-	req.Query(q)
-
-	return req, nil
+	return service, nil
 }
 
 func (e *Element) DeleteByQueryService(client *elastic.Client) (*elastic.DeleteByQueryService, error) {
