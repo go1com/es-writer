@@ -12,8 +12,8 @@ import (
 	"path"
 	"io/ioutil"
 	"strings"
-	"math/rand"
 	"fmt"
+	"math/rand"
 )
 
 func flags() Flags {
@@ -80,15 +80,15 @@ func fixture(filePath string) []byte {
 }
 
 func start(t *testing.T) (*Dog, context.Context, Flags, chan bool) {
+	defer fmt.Print("\n=== Starting", t.Name(), " ===\n\n")
+
 	ctx := context.Background()
 	f := flags()
 
 	// RabbitMQ connection & flush messages
 	con, _ := f.RabbitMqConnection()
 	ch, _ := f.RabbitMqChannel(con)
-	defer fmt.Println("=== Starting", t.Name(), " ===")
-	defer time.Sleep(2 * time.Second)
-	defer ch.QueuePurge(*f.QueueName, false)
+	ch.QueuePurge(*f.QueueName, false)
 
 	// ElasticSearch tools & drop testing index
 	es, _ := f.ElasticSearchClient()
