@@ -43,7 +43,7 @@ func newFlagsForTest() Flags {
 	return f
 }
 
-func waitForCompletion(w *Dog) {
+func standBy(w *Dog) {
 	time.Sleep(2 * time.Second)
 	defer time.Sleep(5 * time.Second)
 
@@ -144,7 +144,7 @@ func TestIndicesCreate(t *testing.T) {
 	defer func() { stop <- true }()
 
 	queue(dog.ch, f, "indices/indices-create.json") // queue a message to rabbitMQ
-	waitForCompletion(dog)                          // Wait a bit so that the message can be consumed.
+	standBy(dog)                                    // Wait a bit so that the message can be consumed.
 
 	res, err := elastic.NewIndicesGetService(dog.es).Index("go1_qa").Do(ctx)
 	if err != nil {
@@ -165,7 +165,7 @@ func TestIndicesDelete(t *testing.T) {
 
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
 	queue(dog.ch, f, "indices/indices-drop.json")   // then, drop it.
-	waitForCompletion(dog)                          // Wait a bit so that the message can be consumed.
+	standBy(dog)                                    // Wait a bit so that the message can be consumed.
 
 	_, err := elastic.NewIndicesGetService(dog.es).Index("go1_qa").Do(ctx)
 	if !strings.Contains(err.Error(), "[type=index_not_found_exception]") {
@@ -179,7 +179,7 @@ func TestBulkCreate(t *testing.T) {
 
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
 	queue(dog.ch, f, "portal/portal-index.json")    // create portal object
-	waitForCompletion(dog)                          // Wait a bit so that the message can be consumed.
+	standBy(dog)                                    // Wait a bit so that the message can be consumed.
 
 	stats := dog.bulk.Stats()
 	if stats.Succeeded == 0 {
@@ -213,7 +213,7 @@ func TestBulkUpdate(t *testing.T) {
 	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
 	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
 	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-	waitForCompletion(dog)                          // Wait a bit so that the message can be consumed.
+	standBy(dog)                                    // Wait a bit so that the message can be consumed.
 
 	stats := dog.bulk.Stats()
 	if stats.Succeeded == 0 {
@@ -237,6 +237,71 @@ func TestBulkUpdate(t *testing.T) {
 	}
 }
 
+func TestBulkUpdateConflict(t *testing.T) {
+	dog, ctx, f, stop := start()
+	defer func() { stop <- true }()
+
+	load := func() string {
+		res, _ := elastic.NewGetService(dog.es).
+			Index("go1_qa").Routing("go1_qa").
+			Type("portal").Id("111").
+			FetchSource(true).
+			Do(ctx)
+
+		source, _ := json.Marshal(res.Source)
+
+		return string(source)
+	}
+
+	queue(dog.ch, f, "indices/indices-create.json") // create the index
+	queue(dog.ch, f, "portal/portal-index.json")    // portal.status = 1
+	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
+	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
+	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
+	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
+	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
+	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
+	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
+	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
+	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
+	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
+	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
+	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
+	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
+	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
+	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
+	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
+	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
+	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
+	standBy(dog)
+	portal := load()
+	if !strings.Contains(portal, `"status":2`) {
+		t.Error("failed to load portal document")
+	}
+
+	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
+	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
+	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
+	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
+	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
+	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
+	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
+	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
+	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
+	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
+	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
+	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
+	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
+	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
+	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
+	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
+	standBy(dog)
+	portal2 := load()
+	if !strings.Contains(portal2, `"status":4`) {
+		t.Error("failed to load portal document")
+	}
+}
+
 func TestBulkableDelete(t *testing.T) {
 	dog, ctx, f, stop := start()
 	defer func() { stop <- true }()
@@ -244,7 +309,7 @@ func TestBulkableDelete(t *testing.T) {
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
 	queue(dog.ch, f, "portal/portal-index.json")    // create portal object
 	queue(dog.ch, f, "portal/portal-delete.json")   // update portal object
-	waitForCompletion(dog)                          // Wait a bit so that the message can be consumed.
+	standBy(dog)                                    // Wait a bit so that the message can be consumed.
 
 	stats := dog.bulk.Stats()
 	if stats.Succeeded == 0 {
@@ -273,7 +338,7 @@ func TestUpdateByQuery(t *testing.T) {
 	queue(dog.ch, f, "portal/portal-index.json")           // create portal, status is 1
 	queue(dog.ch, f, "portal/portal-update.json")          // update portal status to 0
 	queue(dog.ch, f, "portal/portal-update-by-query.json") // update portal status to 2
-	waitForCompletion(dog)                                 // Wait a bit so that the message can be consumed.
+	standBy(dog)                                           // Wait a bit so that the message can be consumed.
 
 	res, err := elastic.
 		NewGetService(dog.es).
