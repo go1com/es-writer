@@ -12,6 +12,8 @@ import (
 	"path"
 	"io/ioutil"
 	"strings"
+	"math/rand"
+	"fmt"
 )
 
 func newFlagsForTest() Flags {
@@ -25,7 +27,7 @@ func newFlagsForTest() Flags {
 	f.Exchange = &exchange
 	routingKey := env("RABBITMQ_ROUTING_KEY", "qa")
 	f.RoutingKey = &routingKey
-	prefetchCount := 5
+	prefetchCount := 50
 	f.PrefetchCount = &prefetchCount
 	prefetchSize := 0
 	f.PrefetchSize = &prefetchSize
@@ -253,52 +255,34 @@ func TestBulkUpdateConflict(t *testing.T) {
 		return string(source)
 	}
 
+	// Create the portal first.
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
 	queue(dog.ch, f, "portal/portal-index.json")    // portal.status = 1
-	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
-	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
-	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
-	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
-	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
-	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
-	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
-	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
-	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
-	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
-	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
-	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
-	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
-	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
 	standBy(dog)
-	portal := load()
-	if !strings.Contains(portal, `"status":2`) {
-		t.Error("failed to load portal document")
+
+	fixtures := []string{
+		"portal/portal-update.json",
+		"portal/portal-update-2.json",
+		"portal/portal-update-3.json",
+		"portal/portal-update-4.json",
 	}
 
-	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
-	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
-	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
-	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
-	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
-	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
-	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
-	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
-	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
-	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
-	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
-	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
-	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-	standBy(dog)
-	portal2 := load()
-	if !strings.Contains(portal2, `"status":4`) {
-		t.Error("failed to load portal document")
+	s := rand.NewSource(time.Now().Unix())
+	r := rand.New(s) // initialize local pseudorandom generator
+	for i := 1; i <= 5; i++ {
+		fmt.Println("Round ", i)
+
+		for count := 1; count <= *f.PrefetchCount; count++ {
+			fixture := fixtures[r.Intn(len(fixtures))]
+			queue(dog.ch, f, fixture) // portal.status = 0
+		}
+
+		queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
+		standBy(dog)
+		portal := load()
+		if !strings.Contains(portal, `"status":4`) {
+			t.Error("failed to load portal document")
+		}
 	}
 }
 
