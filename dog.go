@@ -94,6 +94,10 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 	if "bulkable" != requestType {
 		if w.actions.Length() > 0 {
 			w.flush()
+
+			// TODO: We need more reasonal value than 2s.
+			// We may have issue if make another request instantly after a bulk-request processing
+			time.Sleep(2 * time.Second)
 		}
 
 		err = w.woooof(ctx, requestType, element)
