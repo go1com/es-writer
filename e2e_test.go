@@ -79,14 +79,16 @@ func fixture(filePath string) []byte {
 	return body
 }
 
-func start() (*Dog, context.Context, Flags, chan bool) {
+func start(t *testing.T) (*Dog, context.Context, Flags, chan bool) {
 	ctx := context.Background()
 	f := flags()
 
 	// RabbitMQ connection & flush messages
 	con, _ := f.RabbitMqConnection()
 	ch, _ := f.RabbitMqChannel(con)
-	ch.QueuePurge(*f.QueueName, false)
+	defer fmt.Println("=== Starting", t.Name(), " ===")
+	defer time.Sleep(2 * time.Second)
+	defer ch.QueuePurge(*f.QueueName, false)
 
 	// ElasticSearch tools & drop testing index
 	es, _ := f.ElasticSearchClient()
@@ -142,7 +144,7 @@ func TestFlags(t *testing.T) {
 }
 
 func TestIndicesCreate(t *testing.T) {
-	dog, ctx, f, stop := start()
+	dog, ctx, f, stop := start(t)
 	defer func() { stop <- true }()
 
 	queue(dog.ch, f, "indices/indices-create.json") // queue a message to rabbitMQ
@@ -162,7 +164,7 @@ func TestIndicesCreate(t *testing.T) {
 }
 
 func TestIndicesDelete(t *testing.T) {
-	dog, ctx, f, stop := start()
+	dog, ctx, f, stop := start(t)
 	defer func() { stop <- true }()
 
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
@@ -176,7 +178,7 @@ func TestIndicesDelete(t *testing.T) {
 }
 
 func TestBulkCreate(t *testing.T) {
-	dog, ctx, f, stop := start()
+	dog, ctx, f, stop := start(t)
 	defer func() { stop <- true }()
 
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
@@ -206,7 +208,7 @@ func TestBulkCreate(t *testing.T) {
 }
 
 func TestBulkUpdate(t *testing.T) {
-	dog, ctx, f, stop := start()
+	dog, ctx, f, stop := start(t)
 	defer func() { stop <- true }()
 
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
@@ -240,7 +242,7 @@ func TestBulkUpdate(t *testing.T) {
 }
 
 func TestBulkUpdateConflict(t *testing.T) {
-	dog, ctx, f, stop := start()
+	dog, ctx, f, stop := start(t)
 	defer func() { stop <- true }()
 
 	load := func() string {
@@ -287,7 +289,7 @@ func TestBulkUpdateConflict(t *testing.T) {
 }
 
 func TestBulkableDelete(t *testing.T) {
-	dog, ctx, f, stop := start()
+	dog, ctx, f, stop := start(t)
 	defer func() { stop <- true }()
 
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
@@ -315,7 +317,7 @@ func TestBulkableDelete(t *testing.T) {
 }
 
 func TestUpdateByQuery(t *testing.T) {
-	dog, ctx, f, stop := start()
+	dog, ctx, f, stop := start(t)
 	defer func() { stop <- true }()
 
 	queue(dog.ch, f, "indices/indices-create.json")        // create the index
