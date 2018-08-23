@@ -129,7 +129,7 @@ func (w *Dog) handleUnBulkableAction(ctx context.Context, requestType string, el
 		if err != nil {
 			return err
 		}
-		
+
 		conflictRetryIntervals := []time.Duration{1 * time.Second, 2 * time.Second, 3 * time.Second, 7 * time.Second, 0}
 		for _, conflictRetryInterval := range conflictRetryIntervals {
 			_, err = service.Do(ctx)

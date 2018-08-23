@@ -42,7 +42,7 @@ func TestCreateUpdateRequest(t *testing.T) {
 
 	source, _ := e.Source()
 	command := source[0]
-	if command != `{"update":{"_index":"go1_qa","_routing":"go1_qa","_type":"portal","_id":"111","_refresh":"wait_for"}}` {
+	if command != `{"update":{"_index":"go1_qa","_routing":"go1_qa","_type":"portal","_id":"111"}}` {
 		t.Error("wrong command line")
 	}
 
