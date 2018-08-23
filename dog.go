@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-type Watcher struct {
+type Dog struct {
 	debug bool
 
 	// RabbitMQ
@@ -20,26 +20,26 @@ type Watcher struct {
 	count   int
 
 	// ElasticSearch
-	esClient *elastic.Client
-	esBulk   *elastic.BulkProcessor
+	es   *elastic.Client
+	bulk *elastic.BulkProcessor
 }
 
-func NewWatcher(ch *amqp.Channel, count int, es *elastic.Client, bulk *elastic.BulkProcessor, debug bool) *Watcher {
-	return &Watcher{
-		debug:    debug,
-		ch:       ch,
-		actions:  action.NewContainer(),
-		count:    count,
-		esClient: es,
-		esBulk:   bulk,
+func NewDog(ch *amqp.Channel, count int, es *elastic.Client, bulk *elastic.BulkProcessor, debug bool) *Dog {
+	return &Dog{
+		debug:   debug,
+		ch:      ch,
+		actions: action.NewContainer(),
+		count:   count,
+		es:      es,
+		bulk:    bulk,
 	}
 }
 
-func (w *Watcher) UnitWorks() int {
+func (w *Dog) UnitWorks() int {
 	return w.actions.Length()
 }
 
-func (w *Watcher) Watch(ctx context.Context, flags Flags) (error) {
+func (w *Dog) Watch(ctx context.Context, flags Flags) (error) {
 	ticker := time.NewTicker(*flags.TickInterval)
 	messages, err := w.messages(flags)
 	if err != nil {
@@ -69,7 +69,7 @@ func (w *Watcher) Watch(ctx context.Context, flags Flags) (error) {
 	return nil
 }
 
-func (w *Watcher) messages(flags Flags) (<-chan amqp.Delivery, error) {
+func (w *Dog) messages(flags Flags) (<-chan amqp.Delivery, error) {
 	queue, err := w.ch.QueueDeclare(*flags.QueueName, false, false, false, false, nil, )
 	if nil != err {
 		return nil, err
@@ -88,7 +88,7 @@ func (w *Watcher) messages(flags Flags) (<-chan amqp.Delivery, error) {
 	return messages, nil
 }
 
-func (w *Watcher) onNewMessage(ctx context.Context, m amqp.Delivery) error {
+func (w *Dog) onNewMessage(ctx context.Context, m amqp.Delivery) error {
 	element, err := action.NewElement(m.DeliveryTag, m.Body)
 	if err != nil {
 		return err
@@ -122,13 +122,16 @@ func (w *Watcher) onNewMessage(ctx context.Context, m amqp.Delivery) error {
 	return nil
 }
 
-func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string, element action.Element) error {
+func (w *Dog) handleUnBulkableAction(ctx context.Context, requestType string, element action.Element) error {
 	switch requestType {
 	case "update_by_query":
-		service, err := element.UpdateByQueryService(w.esClient)
+		service, err := element.UpdateByQueryService(w.es)
 		if err != nil {
 			return err
 		}
+
+		body, err := service.GetBody()
+		fmt.Println("update_by_query: ", body)
 
 		conflictRetryIntervals := []time.Duration{1 * time.Second, 2 * time.Second, 3 * time.Second, 7 * time.Second, 0}
 		for _, conflictRetryInterval := range conflictRetryIntervals {
@@ -138,7 +141,7 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string
 			}
 
 			if strings.Contains(err.Error(), "Error 409 (Conflict)") {
-				logrus.WithError(err).Errorf("writing on conflict; try again in %s.\n", conflictRetryInterval)
+				logrus.WithError(err).Errorf("writing has conflict; try again in %s.\n", conflictRetryInterval)
 				time.Sleep(conflictRetryInterval)
 			}
 		}
@@ -146,14 +149,14 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string
 		return err
 
 	case "delete_by_query":
-		service, err := element.DeleteByQueryService(w.esClient)
+		service, err := element.DeleteByQueryService(w.es)
 		if err != nil {
 			_, err := service.Do(ctx)
 			return err
 		}
 
 	case "indices_create":
-		service, err := element.IndicesCreateService(w.esClient)
+		service, err := element.IndicesCreateService(w.es)
 		if err != nil {
 			return err
 		}
@@ -169,7 +172,7 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string
 		return err
 
 	case "indices_delete":
-		service, err := element.IndicesDeleteService(w.esClient)
+		service, err := element.IndicesDeleteService(w.es)
 		if err != nil {
 			return err
 		}
@@ -191,14 +194,14 @@ func (w *Watcher) handleUnBulkableAction(ctx context.Context, requestType string
 	return nil
 }
 
-func (w *Watcher) flush() {
+func (w *Dog) flush() {
 	deliveryTags := []uint64{}
 	for _, element := range w.actions.Elements() {
 		deliveryTags = append(deliveryTags, element.DeliveryTag)
-		w.esBulk.Add(element)
+		w.bulk.Add(element)
 	}
 
-	err := w.esBulk.Flush()
+	err := w.bulk.Flush()
 	if err != nil {
 		logrus.WithError(err).Errorln("failed flushing")
 	}

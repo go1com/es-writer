@@ -14,7 +14,7 @@ func main() {
 	// ---------------------
 	con, err := flags.RabbitMqConnection()
 	if err != nil {
-		logrus.WithError(err).Fatalln("Failed to create watcher connection.")
+		logrus.WithError(err).Fatalln("Failed to create dog connection.")
 		return
 	} else {
 		defer con.Close()
@@ -22,7 +22,7 @@ func main() {
 
 	ch, err := flags.RabbitMqChannel(con)
 	if err != nil {
-		logrus.WithError(err).Fatalln("Failed to create watcher channel.")
+		logrus.WithError(err).Fatalln("Failed to create dog channel.")
 		return
 	} else {
 		defer ch.Close()
@@ -40,10 +40,10 @@ func main() {
 		logrus.WithError(err).Fatalln("Failed to create ElasticSearch bulk processor.")
 	}
 
-	// Watcher: Listen on rabbitMQ and dispatch actions to ElasticSearch
+	// Dog: Listen on rabbitMQ and dispatch actions to ElasticSearch
 	// ---------------------
-	watcher := es_writer.NewWatcher(ch, *flags.PrefetchCount, es, bulk, false)
+	dog := es_writer.NewDog(ch, *flags.PrefetchCount, es, bulk, false)
 	logrus.
-		WithError(watcher.Watch(ctx, flags)).
+		WithError(dog.Watch(ctx, flags)).
 		Fatalln("Failed watching.")
 }
