@@ -31,7 +31,7 @@ test:
 
   # Start testing
   # ---------------------
-  - go test -cover ./...
+  - go test -v -cover ./...
 
 build:
   image: registry.code.go1.com.au/go1/docker:golang

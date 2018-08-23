@@ -35,7 +35,7 @@ func flags() Flags {
 	f.TickInterval = &tickInterval
 	queueName := "es-writer-qa"
 	f.QueueName = &queueName
-	ConsumerName := "es-writer-qa-consumer"
+	ConsumerName := ""
 	f.ConsumerName = &ConsumerName
 	esUrl := env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false")
 	f.EsUrl = &esUrl
@@ -79,80 +79,37 @@ func fixture(filePath string) []byte {
 	return body
 }
 
-func start(t *testing.T) (*Dog, context.Context, Flags, chan bool) {
-	defer fmt.Print("\n=== Starting", t.Name(), " ===\n\n")
-
-	ctx := context.Background()
-	f := flags()
-
-	// RabbitMQ connection & flush messages
-	con, _ := f.RabbitMqConnection()
-	ch, _ := f.RabbitMqChannel(con)
-	ch.QueuePurge(*f.QueueName, false)
-
-	// ElasticSearch tools & drop testing index
-	es, _ := f.ElasticSearchClient()
-	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es)
-	elastic.NewIndicesDeleteService(es).Index([]string{"go1_qa"}).Do(ctx)
-
-	dog := NewDog(ch, *f.PrefetchCount, es, bulk, *f.Debug)
-	go dog.Start(ctx, f)
-
-	stop := make(chan bool)
-	go func() {
-		logrus.Debugln("clean up services")
-		<-stop
-		go bulk.Close()
-		go ch.Close()
-		go con.Close()
-		go elastic.NewIndicesDeleteService(es).Index([]string{"go1_qa"}).Do(ctx)
-
-		time.Sleep(5 * time.Second)
-	}()
-
-	return dog, ctx, f, stop
-}
-
 func TestFlags(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	con, err := f.RabbitMqConnection()
-	if err != nil {
-		t.Fatalf("failed to make rabbitMQ connection: %s", err.Error())
-	} else {
-		defer con.Close()
-	}
+	con, _ := f.RabbitMqConnection()
+	defer con.Close()
+	ch, _ := f.RabbitMqChannel(con)
+	defer ch.Close()
+	es, _ := f.ElasticSearchClient()
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es)
+	defer bulk.Close()
 
-	ch, err := f.RabbitMqChannel(con)
-	if err != nil {
-		t.Fatalf("failed to make rabbitMQ channel: %s", err.Error())
-	} else {
-		defer ch.Close()
-	}
-
-	es, err := f.ElasticSearchClient()
-	if err != nil {
-		t.Fatalf("failed to make ElasticSearch client: %s", err.Error())
-	}
-
-	bulk, err := f.ElasticSearchBulkProcessor(ctx, es)
-	if err != nil {
-		t.Fatalf("failed to make ElasticSearch bulk processor: %s", err.Error())
-	} else {
-		defer bulk.Close()
-	}
+	queue(ch, f, "indices-create.json")
 }
 
 func TestIndicesCreate(t *testing.T) {
-	dog, ctx, f, stop := start(t)
-	defer func() { stop <- true }()
+	ctx := context.Background()
+	f := flags()
+	con, _ := f.RabbitMqConnection(); defer con.Close()
+	ch, _ := f.RabbitMqChannel(con); defer ch.QueuePurge(*f.QueueName, false)
+	es, _ := f.ElasticSearchClient(); defer elastic.NewIndicesDeleteService(es).Index([]string{"go1_qa"}).Do(ctx)
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es); defer bulk.Close()
+	dog := NewDog(ch, *f.PrefetchCount, es, bulk, *f.Debug)
+	go dog.Start(ctx, f)
+	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json") // queue a message to rabbitMQ
-	stand(dog)                                      // Wait a bit so that the message can be consumed.
+	queue(ch, f, "indices/indices-create.json") // queue a message to rabbitMQ
+	stand(dog)                                  // Wait a bit so that the message can be consumed.
 
 	res, err := elastic.NewIndicesGetService(dog.es).Index("go1_qa").Do(ctx)
 	if err != nil {
-		t.Fatal("can't get new index: " + err.Error())
+		t.Fatal(err.Error())
 	}
 
 	response := res["go1_qa"]
@@ -164,12 +121,19 @@ func TestIndicesCreate(t *testing.T) {
 }
 
 func TestIndicesDelete(t *testing.T) {
-	dog, ctx, f, stop := start(t)
-	defer func() { stop <- true }()
+	ctx := context.Background()
+	f := flags()
+	con, _ := f.RabbitMqConnection(); defer con.Close()
+	ch, _ := f.RabbitMqChannel(con); defer ch.QueuePurge(*f.QueueName, false)
+	es, _ := f.ElasticSearchClient(); defer elastic.NewIndicesDeleteService(es).Index([]string{"go1_qa"}).Do(ctx)
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es); defer bulk.Close()
+	dog := NewDog(ch, *f.PrefetchCount, es, bulk, *f.Debug)
+	go dog.Start(ctx, f)
+	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json") // create the index
-	queue(dog.ch, f, "indices/indices-drop.json")   // then, drop it.
-	stand(dog)                                      // Wait a bit so that the message can be consumed.
+	queue(ch, f, "indices/indices-create.json") // create the index
+	queue(ch, f, "indices/indices-drop.json")   // then, drop it.
+	stand(dog)                                  // Wait a bit so that the message can be consumed.
 
 	_, err := elastic.NewIndicesGetService(dog.es).Index("go1_qa").Do(ctx)
 	if !strings.Contains(err.Error(), "[type=index_not_found_exception]") {
@@ -178,12 +142,19 @@ func TestIndicesDelete(t *testing.T) {
 }
 
 func TestBulkCreate(t *testing.T) {
-	dog, ctx, f, stop := start(t)
-	defer func() { stop <- true }()
+	ctx := context.Background()
+	f := flags()
+	con, _ := f.RabbitMqConnection(); defer con.Close()
+	ch, _ := f.RabbitMqChannel(con); defer ch.QueuePurge(*f.QueueName, false)
+	es, _ := f.ElasticSearchClient(); defer elastic.NewIndicesDeleteService(es).Index([]string{"go1_qa"}).Do(ctx)
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es); defer bulk.Close()
+	dog := NewDog(ch, *f.PrefetchCount, es, bulk, *f.Debug)
+	go dog.Start(ctx, f)
+	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json") // create the index
-	queue(dog.ch, f, "portal/portal-index.json")    // create portal object
-	stand(dog)                                      // Wait a bit so that the message can be consumed.
+	queue(ch, f, "indices/indices-create.json") // create the index
+	queue(ch, f, "portal/portal-index.json")    // create portal object
+	stand(dog)                                  // Wait a bit so that the message can be consumed.
 
 	stats := dog.bulk.Stats()
 	if stats.Succeeded == 0 {
@@ -208,16 +179,23 @@ func TestBulkCreate(t *testing.T) {
 }
 
 func TestBulkUpdate(t *testing.T) {
-	dog, ctx, f, stop := start(t)
-	defer func() { stop <- true }()
+	ctx := context.Background()
+	f := flags()
+	con, _ := f.RabbitMqConnection(); defer con.Close()
+	ch, _ := f.RabbitMqChannel(con); defer ch.QueuePurge(*f.QueueName, false)
+	es, _ := f.ElasticSearchClient(); defer elastic.NewIndicesDeleteService(es).Index([]string{"go1_qa"}).Do(ctx)
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es); defer bulk.Close()
+	dog := NewDog(ch, *f.PrefetchCount, es, bulk, *f.Debug)
+	go dog.Start(ctx, f)
+	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json") // create the index
-	queue(dog.ch, f, "portal/portal-index.json")    // portal.status = 1
-	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
-	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
-	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
-	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-	stand(dog)                                      // Wait a bit so that the message can be consumed.
+	queue(ch, f, "indices/indices-create.json") // create the index
+	queue(ch, f, "portal/portal-index.json")    // portal.status = 1
+	queue(ch, f, "portal/portal-update.json")   // portal.status = 0
+	queue(ch, f, "portal/portal-update-2.json") // portal.status = 2
+	queue(ch, f, "portal/portal-update-3.json") // portal.status = 3
+	queue(ch, f, "portal/portal-update-4.json") // portal.status = 4
+	stand(dog)                                  // Wait a bit so that the message can be consumed.
 
 	stats := dog.bulk.Stats()
 	if stats.Succeeded == 0 {
@@ -242,8 +220,15 @@ func TestBulkUpdate(t *testing.T) {
 }
 
 func TestBulkUpdateConflict(t *testing.T) {
-	dog, ctx, f, stop := start(t)
-	defer func() { stop <- true }()
+	ctx := context.Background()
+	f := flags()
+	con, _ := f.RabbitMqConnection(); defer con.Close()
+	ch, _ := f.RabbitMqChannel(con); defer ch.QueuePurge(*f.QueueName, false)
+	es, _ := f.ElasticSearchClient(); defer elastic.NewIndicesDeleteService(es).Index([]string{"go1_qa"}).Do(ctx)
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es); defer bulk.Close()
+	dog := NewDog(ch, *f.PrefetchCount, es, bulk, *f.Debug)
+	go dog.Start(ctx, f)
+	time.Sleep(3 * time.Second)
 
 	load := func() string {
 		res, _ := elastic.NewGetService(dog.es).
@@ -289,13 +274,20 @@ func TestBulkUpdateConflict(t *testing.T) {
 }
 
 func TestBulkableDelete(t *testing.T) {
-	dog, ctx, f, stop := start(t)
-	defer func() { stop <- true }()
+	ctx := context.Background()
+	f := flags()
+	con, _ := f.RabbitMqConnection(); defer con.Close()
+	ch, _ := f.RabbitMqChannel(con); defer ch.QueuePurge(*f.QueueName, false)
+	es, _ := f.ElasticSearchClient(); defer elastic.NewIndicesDeleteService(es).Index([]string{"go1_qa"}).Do(ctx)
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es); defer bulk.Close()
+	dog := NewDog(ch, *f.PrefetchCount, es, bulk, *f.Debug)
+	go dog.Start(ctx, f)
+	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json") // create the index
-	queue(dog.ch, f, "portal/portal-index.json")    // create portal object
-	queue(dog.ch, f, "portal/portal-delete.json")   // update portal object
-	stand(dog)                                      // Wait a bit so that the message can be consumed.
+	queue(ch, f, "indices/indices-create.json") // create the index
+	queue(ch, f, "portal/portal-index.json")    // create portal object
+	queue(ch, f, "portal/portal-delete.json")   // update portal object
+	stand(dog)                                  // Wait a bit so that the message can be consumed.
 
 	stats := dog.bulk.Stats()
 	if stats.Succeeded == 0 {
@@ -317,14 +309,21 @@ func TestBulkableDelete(t *testing.T) {
 }
 
 func TestUpdateByQuery(t *testing.T) {
-	dog, ctx, f, stop := start(t)
-	defer func() { stop <- true }()
+	ctx := context.Background()
+	f := flags()
+	con, _ := f.RabbitMqConnection(); defer con.Close()
+	ch, _ := f.RabbitMqChannel(con); defer ch.QueuePurge(*f.QueueName, false)
+	es, _ := f.ElasticSearchClient(); defer elastic.NewIndicesDeleteService(es).Index([]string{"go1_qa"}).Do(ctx)
+	bulk, _ := f.ElasticSearchBulkProcessor(ctx, es); defer bulk.Close()
+	dog := NewDog(ch, *f.PrefetchCount, es, bulk, *f.Debug)
+	go dog.Start(ctx, f)
+	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json")        // create the index
-	queue(dog.ch, f, "portal/portal-index.json")           // create portal, status is 1
-	queue(dog.ch, f, "portal/portal-update.json")          // update portal status to 0
-	queue(dog.ch, f, "portal/portal-update-by-query.json") // update portal status to 2
-	stand(dog)                                             // Wait a bit so that the message can be consumed.
+	queue(ch, f, "indices/indices-create.json")        // create the index
+	queue(ch, f, "portal/portal-index.json")           // create portal, status is 1
+	queue(ch, f, "portal/portal-update.json")          // update portal status to 0
+	queue(ch, f, "portal/portal-update-by-query.json") // update portal status to 2
+	stand(dog)                                         // Wait a bit so that the message can be consumed.
 
 	res, err := elastic.
 		NewGetService(dog.es).

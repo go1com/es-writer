@@ -80,12 +80,7 @@ func (w *Dog) messages(flags Flags) (<-chan amqp.Delivery, error) {
 		return nil, err
 	}
 
-	messages, err := w.ch.Consume(queue.Name, *flags.ConsumerName, false, false, false, true, nil)
-	if nil != err {
-		return nil, err
-	}
-
-	return messages, nil
+	return w.ch.Consume(queue.Name, *flags.ConsumerName, false, false, false, true, nil)
 }
 
 func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
@@ -101,7 +96,7 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 			w.flush()
 		}
 
-		err = w.handleUnBulkableAction(ctx, requestType, element)
+		err = w.woooof(ctx, requestType, element)
 		if err == nil {
 			w.ch.Ack(m.DeliveryTag, true)
 		}
@@ -110,8 +105,7 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 	}
 
 	if w.debug {
-		logrus.Debugln("[actions.add]")
-		logrus.Debugln(element.String())
+		logrus.Debugln("[woof] bulkable action: ", w.actions.Length() + 1)
 	}
 
 	w.actions.Add(element)
@@ -122,7 +116,7 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 	return nil
 }
 
-func (w *Dog) handleUnBulkableAction(ctx context.Context, requestType string, element action.Element) error {
+func (w *Dog) woooof(ctx context.Context, requestType string, element action.Element) error {
 	switch requestType {
 	case "update_by_query":
 		service, err := element.UpdateByQueryService(w.es)
