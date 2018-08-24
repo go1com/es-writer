@@ -38,7 +38,7 @@ func env(key string, defaultValue string) string {
 
 func NewFlags() Flags {
 	f := Flags{}
-	f.Url = flag.String("url", env("FU_DUY", "amqp://go1:go1@127.0.0.1:5672/"), "")
+	f.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
 	f.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
 	f.Exchange = flag.String("exchange", env("RABBITMQ_EXCHANGE", "events"), "")
 	f.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "es.writer.go1"), "")

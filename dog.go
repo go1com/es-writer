@@ -189,7 +189,7 @@ func (w *Dog) woooof(ctx context.Context, requestType string, element action.Ele
 }
 
 func (w *Dog) flush(ctx context.Context) {
-	bulk := w.es.Bulk().Refresh("wait_for")
+	bulk := w.es.Bulk().Refresh("true")
 
 	deliveryTags := []uint64{}
 	for _, element := range w.actions.Elements() {
@@ -209,6 +209,6 @@ func (w *Dog) flush(ctx context.Context) {
 
 		w.actions.Clear()
 	} else {
-		// WHAT IF FAILED?
+		// TODO: WHAT IF FAILED?
 	}
 }
