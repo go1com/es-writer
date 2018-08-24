@@ -67,5 +67,5 @@ dockerize:
   - cd artifacts
   - cp $ROOT/Dockerfile $CI_PROJECT_DIR/artifacts/Dockerfile
   - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.code.go1.com.au
-  - docker build -t registry.code.go1.com.au/fn/es-writer:master .
-  - docker push registry.code.go1.com.au/fn/es-writer:master
+  - docker build -t registry.code.go1.com.au/fn/es-writer:$CI_BUILD_REF_NAME .
+  - docker push registry.code.go1.com.au/fn/es-writer:$CI_BUILD_REF_NAME
