@@ -24,17 +24,6 @@ type Dog struct {
 	bulk *elastic.BulkProcessor
 }
 
-func NewDog(ch *amqp.Channel, count int, es *elastic.Client, bulk *elastic.BulkProcessor, debug bool) *Dog {
-	return &Dog{
-		debug:   debug,
-		ch:      ch,
-		actions: action.NewContainer(),
-		count:   count,
-		es:      es,
-		bulk:    bulk,
-	}
-}
-
 func (w *Dog) UnitWorks() int {
 	return w.actions.Length()
 }
@@ -50,7 +39,7 @@ func (w *Dog) Start(ctx context.Context, flags Flags) (error) {
 		select {
 		case <-ticker.C:
 			if w.actions.Length() > 0 {
-				w.flush()
+				w.flush(ctx)
 			}
 
 		case m := <-messages:
@@ -93,11 +82,7 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 	requestType := element.RequestType()
 	if "bulkable" != requestType {
 		if w.actions.Length() > 0 {
-			w.flush()
-
-			// TODO: We need more reasonal value than 2s.
-			// We may have issue if make another request instantly after a bulk-request processing
-			time.Sleep(2 * time.Second)
+			w.flush(ctx)
 		}
 
 		err = w.woooof(ctx, requestType, element)
@@ -114,7 +99,7 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 
 	w.actions.Add(element)
 	if w.actions.Length() >= w.count {
-		w.flush()
+		w.flush(ctx)
 	}
 
 	return nil
@@ -203,14 +188,16 @@ func (w *Dog) woooof(ctx context.Context, requestType string, element action.Ele
 	return nil
 }
 
-func (w *Dog) flush() {
+func (w *Dog) flush(ctx context.Context) {
+	bulk := w.es.Bulk().Refresh("wait_for")
+
 	deliveryTags := []uint64{}
 	for _, element := range w.actions.Elements() {
 		deliveryTags = append(deliveryTags, element.DeliveryTag)
-		w.bulk.Add(element)
+		bulk.Add(element)
 	}
 
-	err := w.bulk.Flush()
+	_, err := bulk.Do(ctx)
 	if err != nil {
 		logrus.WithError(err).Errorln("failed flushing")
 	}

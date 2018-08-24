@@ -8,58 +8,31 @@ import (
 
 func main() {
 	ctx := context.Background()
-	flags := es_writer.NewFlags()
+	f := es_writer.NewFlags()
 
-	// Credentials can be leak with debug enabled.
-	if *flags.Debug {
+	// Credentials can be leaked with debug enabled.
+	if *f.Debug {
 		logrus.Infoln("======= ElasticSearch-Writer =======")
-		logrus.Infof("RabbitMQ URL: %s", *flags.Url)
-		logrus.Infof("RabbitMQ kind: %s", *flags.Kind)
-		logrus.Infof("RabbitMQ exchange: %s", *flags.Exchange)
-		logrus.Infof("RabbitMQ routing key: %s", *flags.RoutingKey)
-		logrus.Infof("RabbitMQ prefetch count: %d", *flags.PrefetchCount)
-		logrus.Infof("RabbitMQ prefetch size: %d", *flags.PrefetchSize)
-		logrus.Infof("RabbitMQ queue name: %s", *flags.QueueName)
-		logrus.Infof("RabbitMQ consumer name: %s", *flags.ConsumerName)
-		logrus.Infof("ElasticSearch URL: %s", *flags.EsUrl)
-		logrus.Infof("Tick interval: %s", *flags.TickInterval)
-		logrus.Infoln("")
+		logrus.Infof("RabbitMQ URL: %s", *f.Url)
+		logrus.Infof("RabbitMQ kind: %s", *f.Kind)
+		logrus.Infof("RabbitMQ exchange: %s", *f.Exchange)
+		logrus.Infof("RabbitMQ routing key: %s", *f.RoutingKey)
+		logrus.Infof("RabbitMQ prefetch count: %d", *f.PrefetchCount)
+		logrus.Infof("RabbitMQ prefetch size: %d", *f.PrefetchSize)
+		logrus.Infof("RabbitMQ queue name: %s", *f.QueueName)
+		logrus.Infof("RabbitMQ consumer name: %s", *f.ConsumerName)
+		logrus.Infof("ElasticSearch URL: %s", *f.EsUrl)
+		logrus.Infof("Tick interval: %s", *f.TickInterval)
+		logrus.Infoln("====================================")
 	}
 
-	// RabbitMQ connection & channel
-	// ---------------------
-	con, err := flags.RabbitMqConnection()
+	dog, err, stop := f.Dog()
 	if err != nil {
-		logrus.WithError(err).Fatalln("Failed to create dog connection.")
-		return
-	} else {
-		defer con.Close()
+		logrus.
+			WithError(err).
+			Panicln("failed to get the dog")
 	}
 
-	ch, err := flags.RabbitMqChannel(con)
-	if err != nil {
-		logrus.WithError(err).Fatalln("Failed to create dog channel.")
-		return
-	} else {
-		defer ch.Close()
-	}
-
-	// ElasticSearch connection & bulk-processor
-	// ---------------------
-	es, err := flags.ElasticSearchClient()
-	if err != nil {
-		logrus.WithError(err).Fatalln("Failed to create ElasticSearch client.")
-	}
-
-	bulk, err := flags.ElasticSearchBulkProcessor(ctx, es)
-	if err != nil {
-		logrus.WithError(err).Fatalln("Failed to create ElasticSearch bulk processor.")
-	}
-
-	// Dog: Listen on rabbitMQ and dispatch actions to ElasticSearch
-	// ---------------------
-	dog := es_writer.NewDog(ch, *flags.PrefetchCount, es, bulk, false)
-	logrus.
-		WithError(dog.Start(ctx, flags)).
-		Fatalln("Failed watching.")
+	defer func() { stop <- true }()
+	dog.Start(ctx, f)
 }

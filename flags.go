@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"gopkg.in/olivere/elastic.v5"
 	"gopkg.in/olivere/elastic.v5/config"
-	"context"
 	"os"
+	"go1/es-writer/action"
 )
 
 type Flags struct {
@@ -38,7 +38,7 @@ func env(key string, defaultValue string) string {
 
 func NewFlags() Flags {
 	f := Flags{}
-	f.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
+	f.Url = flag.String("url", env("FU_DUY", "amqp://go1:go1@127.0.0.1:5672/"), "")
 	f.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
 	f.Exchange = flag.String("exchange", env("RABBITMQ_EXCHANGE", "events"), "")
 	f.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "es.writer.go1"), "")
@@ -48,14 +48,15 @@ func NewFlags() Flags {
 	f.QueueName = flag.String("queue-name", "es-writter", "")
 	f.ConsumerName = flag.String("consumer-name", "es-writter", "")
 	f.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
-	f.Debug = flag.Bool("debug", false, "")
+	f.Debug = flag.Bool("debug", false, "Enable with care; credentials can be leaked if this is on.")
 	flag.Parse()
 
 	return f
 }
 
-func (f *Flags) RabbitMqConnection() (*amqp.Connection, error) {
-	con, err := amqp.Dial(*f.Url)
+func (f *Flags) queueConnection() (*amqp.Connection, error) {
+	url := *f.Url
+	con, err := amqp.Dial(url)
 	if nil != err {
 		return nil, err
 	}
@@ -75,7 +76,7 @@ func (f *Flags) RabbitMqConnection() (*amqp.Connection, error) {
 	return con, nil
 }
 
-func (f *Flags) RabbitMqChannel(con *amqp.Connection) (*amqp.Channel, error) {
+func (f *Flags) queueChannel(con *amqp.Connection) (*amqp.Channel, error) {
 	ch, err := con.Channel()
 	if nil != err {
 		return nil, err
@@ -104,7 +105,7 @@ func (f *Flags) RabbitMqChannel(con *amqp.Connection) (*amqp.Channel, error) {
 	return ch, nil
 }
 
-func (f *Flags) ElasticSearchClient() (*elastic.Client, error) {
+func (f *Flags) elasticSearchClient() (*elastic.Client, error) {
 	cfg, err := config.Parse(*f.EsUrl)
 	if err != nil {
 		logrus.Fatalf("failed to parse URL: %s", err.Error())
@@ -120,24 +121,35 @@ func (f *Flags) ElasticSearchClient() (*elastic.Client, error) {
 	return client, nil
 }
 
-func (f *Flags) ElasticSearchBulkProcessor(ctx context.Context, client *elastic.Client) (*elastic.BulkProcessor, error) {
-	service := elastic.
-		NewBulkProcessorService(client).
-		Name("es-writter").
-		Stats(true).
-		FlushInterval(2 * time.Second).
-		Workers(1).
-		Stats(*f.Debug)
-
-	processor, err := service.Do(ctx)
+func (f *Flags) Dog() (*Dog, error, chan bool) {
+	con, err := f.queueConnection()
 	if err != nil {
-		return nil, err
+		return nil, err, nil
 	}
 
-	err = processor.Start(ctx)
+	ch, err := f.queueChannel(con)
 	if err != nil {
-		return nil, err
+		return nil, err, nil
 	}
 
-	return processor, nil
+	es, err := f.elasticSearchClient()
+	if err != nil {
+		return nil, err, nil
+	}
+
+	stop := make(chan bool)
+
+	go func() {
+		<-stop
+		ch.Close()
+		con.Close()
+	}()
+
+	return &Dog{
+		debug:   *f.Debug,
+		ch:      ch,
+		actions: action.NewContainer(),
+		count:   *f.PrefetchCount,
+		es:      es,
+	}, nil, stop
 }
