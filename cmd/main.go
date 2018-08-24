@@ -10,6 +10,22 @@ func main() {
 	ctx := context.Background()
 	flags := es_writer.NewFlags()
 
+	// Credentials can be leak with debug enabled.
+	if *flags.Debug {
+		logrus.Infoln("======= ElasticSearch-Writer =======")
+		logrus.Infof("RabbitMQ URL: %s", *flags.Url)
+		logrus.Infof("RabbitMQ kind: %s", *flags.Kind)
+		logrus.Infof("RabbitMQ exchange: %s", *flags.Exchange)
+		logrus.Infof("RabbitMQ routing key: %s", *flags.RoutingKey)
+		logrus.Infof("RabbitMQ prefetch count: %d", *flags.PrefetchCount)
+		logrus.Infof("RabbitMQ prefetch size: %d", *flags.PrefetchSize)
+		logrus.Infof("RabbitMQ queue name: %s", *flags.QueueName)
+		logrus.Infof("RabbitMQ consumer name: %s", *flags.ConsumerName)
+		logrus.Infof("ElasticSearch URL: %s", *flags.EsUrl)
+		logrus.Infof("Tick interval: %s", *flags.TickInterval)
+		logrus.Infoln("")
+	}
+
 	// RabbitMQ connection & channel
 	// ---------------------
 	con, err := flags.RabbitMqConnection()
