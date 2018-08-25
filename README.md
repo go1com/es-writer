@@ -13,7 +13,7 @@ It's also easy to create cluster Elastic Search servers without magic.
 
 ## Usage
 
-### Publishing
+### Queueing
 
 To write data to ES server, your service publishes messages to `GO1` RabbitMQ with:
 
@@ -31,7 +31,7 @@ To write data to ES server, your service publishes messages to `GO1` RabbitMQ wi
 
 Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
 
-### Writer
+### Consuming
 
     /path/to/es-writer
         -url             RABBITMQ_URL<STRING=amqp://go1:go1@127.0.0.1:5672/>
