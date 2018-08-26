@@ -1,0 +1,16 @@
+language: go
+go:
+- stable
+services:
+  - rabbitmq
+  - elasticsearch
+env:
+  - RABBITMQ_URL=amqp://guest:guest@127.0.0.1:5672/
+  - ELASTIC_SEARCH_URL=http://127.0.0.1:9200/?sniff=false
+before_install:
+  - pwd
+  - go get github.com/golang/dep/cmd/dep
+  - ${GOPATH}/bin/dep ensure
+install: true
+script:
+- go test -race -v ./...
