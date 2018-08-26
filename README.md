@@ -1,4 +1,4 @@
-ES-Writer [![build status](https://code.go1.com.au/fn/es-writer/badges/master/build.svg)](https://code.go1.com.au/fn/es-writer/commits/master)
+Elastic Search writer [![Build Status](https://travis-ci.org/go1com/es-writer.svg?branch=master)](https://travis-ci.org/go1com/es-writer)
 ====
 
 ## Problems
