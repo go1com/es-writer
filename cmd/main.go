@@ -1,7 +1,7 @@
 package main
 
 import (
-	"go1/es-writer"
+	"github/go1com/es-writer"
 	"github.com/sirupsen/logrus"
 	"context"
 )

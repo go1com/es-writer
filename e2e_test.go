@@ -1,19 +1,19 @@
 package es_writer
 
 import (
-	"testing"
 	"context"
-	"time"
-	"gopkg.in/olivere/elastic.v5"
 	"encoding/json"
-	"github.com/streadway/amqp"
-	"github.com/sirupsen/logrus"
-	"runtime"
-	"path"
-	"io/ioutil"
-	"strings"
 	"fmt"
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
+	"gopkg.in/olivere/elastic.v5"
+	"io/ioutil"
 	"math/rand"
+	"path"
+	"runtime"
+	"strings"
+	"testing"
+	"time"
 )
 
 func flags() Flags {

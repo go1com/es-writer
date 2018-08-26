@@ -1,14 +1,14 @@
 package es_writer
 
 import (
-	"go1/es-writer/action"
 	"context"
-	"github.com/streadway/amqp"
-	"time"
-	"gopkg.in/olivere/elastic.v5"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
+	"github/go1com/es-writer/action"
+	"gopkg.in/olivere/elastic.v5"
 	"strings"
+	"time"
 )
 
 type Dog struct {

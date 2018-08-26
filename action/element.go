@@ -1,11 +1,11 @@
 package action
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/jmespath/go-jmespath"
 	"gopkg.in/olivere/elastic.v5"
 	"strings"
-	"fmt"
-	"encoding/json"
-	"github.com/jmespath/go-jmespath"
 )
 
 type Element struct {

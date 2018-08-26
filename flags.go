@@ -2,14 +2,14 @@ package es_writer
 
 import (
 	"flag"
-	"time"
-	"github.com/streadway/amqp"
-	"github.com/sirupsen/logrus"
 	"fmt"
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
+	"github/go1com/es-writer/action"
 	"gopkg.in/olivere/elastic.v5"
 	"gopkg.in/olivere/elastic.v5/config"
 	"os"
-	"go1/es-writer/action"
+	"time"
 )
 
 type Flags struct {
