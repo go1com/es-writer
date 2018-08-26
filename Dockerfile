@@ -1,7 +1,13 @@
-FROM alpine:3.7
-MAINTAINER Andy Truong <andy@go1.com.au>
+FROM golang:1.10
+
+WORKDIR /go/src/github.com/go1com/es-writer/
+COPY    . /go/src/github.com/go1com/es-writer/
+RUN     CGO_ENABLED=0 GOOS=linux go build -o /app /go/src/github.com/go1com/es-writer/cmd/main.go
+
+
+FROM alpine:3.8
+LABEL maintainer="Andy Truong <andy@go1.com.au>"
 
 RUN apk add --no-cache ca-certificates
-ADD app /app/app
-
-ENTRYPOINT ["/app/app"]
+COPY --from=0 /app /app
+ENTRYPOINT ["/app"]

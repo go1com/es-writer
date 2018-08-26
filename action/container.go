@@ -27,7 +27,6 @@ func (c *Container) Clear() {
 	defer c.mutext.Unlock()
 
 	c.elements = []Element{}
-
 }
 
 func (c *Container) Length() int {
