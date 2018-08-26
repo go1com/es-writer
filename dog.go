@@ -1,7 +1,7 @@
 package es_writer
 
 import (
-	"./action"
+	"github.com/go1com/es-writer/action"
 
 	"context"
 	"fmt"

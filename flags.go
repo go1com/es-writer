@@ -1,10 +1,9 @@
 package es_writer
 
 import (
-	"./action"
-
 	"flag"
 	"fmt"
+	"github.com/go1com/es-writer/action"
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"gopkg.in/olivere/elastic.v5"
