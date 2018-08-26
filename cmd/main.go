@@ -1,14 +1,15 @@
 package main
 
 import (
-	"github/go1com/es-writer"
+	w ".."
+
 	"github.com/sirupsen/logrus"
 	"context"
 )
 
 func main() {
 	ctx := context.Background()
-	f := es_writer.NewFlags()
+	f := w.NewFlags()
 
 	// Credentials can be leaked with debug enabled.
 	if *f.Debug {

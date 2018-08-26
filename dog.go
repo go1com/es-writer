@@ -1,11 +1,12 @@
 package es_writer
 
 import (
+	"./action"
+
 	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
-	"github/go1com/es-writer/action"
 	"gopkg.in/olivere/elastic.v5"
 	"strings"
 	"time"
