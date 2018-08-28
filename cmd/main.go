@@ -24,6 +24,8 @@ func main() {
 		logrus.Infof("ElasticSearch URL: %s", *f.EsUrl)
 		logrus.Infof("Tick interval: %s", *f.TickInterval)
 		logrus.Infoln("====================================")
+
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	dog, err, stop := f.Dog()
