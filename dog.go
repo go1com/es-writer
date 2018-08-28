@@ -190,6 +190,7 @@ func (w *Dog) woooof(ctx context.Context, requestType string, element action.Ele
 }
 
 func (w *Dog) flush(ctx context.Context) {
+	// TODO: Need a review on refreshing flag here, this can make index very slowly
 	bulk := w.es.Bulk().Refresh("true")
 
 	deliveryTags := []uint64{}
