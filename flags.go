@@ -45,7 +45,7 @@ func NewFlags() Flags {
 	f.PrefetchCount = flag.Int("prefetch-count", 50, "")
 	f.PrefetchSize = flag.Int("prefetch-size", 0, "")
 	f.TickInterval = flag.Duration("tick-iterval", 5*time.Second, "")
-	f.QueueName = flag.String("queue-name", "es-writter", "")
+	f.QueueName = flag.String("queue-name", env("RABBITMQ_QUEUE_NAME", "es-writer"), "")
 	f.ConsumerName = flag.String("consumer-name", "es-writter", "")
 	f.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
 	f.Debug = flag.Bool("debug", false, "Enable with care; credentials can be leaked if this is on.")
