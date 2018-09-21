@@ -86,7 +86,7 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 			w.flush(ctx)
 		}
 
-		err = w.woooof(ctx, requestType, element)
+		err = w.doubleWoof(ctx, requestType, element)
 		if err == nil {
 			w.ch.Ack(m.DeliveryTag, true)
 		}
@@ -106,7 +106,7 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 	return nil
 }
 
-func (w *Dog) woooof(ctx context.Context, requestType string, element action.Element) error {
+func (w *Dog) doubleWoof(ctx context.Context, requestType string, element action.Element) error {
 	switch requestType {
 	case "update_by_query":
 		service, err := element.UpdateByQueryService(w.es)

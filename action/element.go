@@ -32,6 +32,7 @@ type Element struct {
 	VersionType string
 }
 
+// Implement elastic.BulkableRequest interface
 func (e Element) String() string {
 	lines, err := e.Source()
 	if err != nil {
@@ -41,6 +42,7 @@ func (e Element) String() string {
 	return strings.Join(lines, "\n")
 }
 
+// Implement elastic.BulkableRequest interface
 func (e Element) Source() ([]string, error) {
 	if strings.HasSuffix(e.Uri, "/_create") {
 		body, err := json.Marshal(e.Body)
