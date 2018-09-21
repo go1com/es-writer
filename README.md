@@ -42,3 +42,13 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
         -queue-name      RABBITMQ_QUEUE_NAME<STRING=es-writer>
         -prefetch-count  RABBITMQ_PREFETCH_COUNT<INT=50>
         -es-url          ELASTIC_SEARCH_URL<STRING=http://127.0.0.1:9200/?sniff=false>
+
+
+### Notes
+
+Limit these kinds of request because they are not bulkable:
+
+- /_update_by_query
+- /_delete_by_query
+- PUT /index_name
+- DELETE /index_name
