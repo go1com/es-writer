@@ -43,7 +43,6 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
         -prefetch-count  RABBITMQ_PREFETCH_COUNT<INT=50>
         -es-url          ELASTIC_SEARCH_URL<STRING=http://127.0.0.1:9200/?sniff=false>
 
-
 ### Notes
 
 Limit these kinds of request because they are not bulkable:
