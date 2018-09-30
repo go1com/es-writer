@@ -108,7 +108,7 @@ func TestIndicesCreate(t *testing.T) {
 	}
 
 	response := res["go1_qa"]
-	expecting := `{"portal":{"_routing":{"required":true},"properties":{"id":{"type":"keyword"},"name":{"type":"keyword"},"status":{"type":"short"},"title":{"fields":{"analyzed":{"type":"text"}},"type":"keyword"}}}}`
+	expecting := `{"portal":{"_routing":{"required":true},"properties":{"author":{"properties":{"email":{"type":"text"},"name":{"type":"text"}}},"id":{"type":"keyword"},"name":{"type":"keyword"},"status":{"type":"short"},"title":{"fields":{"analyzed":{"type":"text"}},"type":"keyword"}}}}`
 	actual, _ := json.Marshal(response.Mappings)
 	if expecting != string(actual) {
 		t.Fatal("failed")
@@ -211,10 +211,11 @@ func TestGracefulUpdate(t *testing.T) {
 	go dog.Start(ctx, f)
 	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json") // create the index
-	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
-	queue(dog.ch, f, "portal/portal-index.json")    // portal.status = 1
-	stand(dog)                                      // Wait a bit so that the message can be consumed.
+	queue(dog.ch, f, "indices/indices-create.json")      // create the index
+	queue(dog.ch, f, "portal/portal-update.json")        // portal.status = 0
+	queue(dog.ch, f, "portal/portal-update-author.json") // portal.author.name = truong
+	queue(dog.ch, f, "portal/portal-index.json")         // portal.status = 1
+	stand(dog)                                                // Wait a bit so that the message can be consumed.
 
 	res, _ := elastic.
 		NewGetService(dog.es).
