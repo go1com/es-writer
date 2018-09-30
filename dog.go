@@ -199,9 +199,22 @@ func (w *Dog) flush(ctx context.Context) {
 		bulk.Add(element)
 	}
 
-	_, err := bulk.Do(ctx)
+	res, err := bulk.Do(ctx)
 	if err != nil {
 		logrus.WithError(err).Errorln("failed flushing")
+	} else {
+		for _, rItem := range res.Items {
+			for riKey, riValue := range rItem {
+				if riValue.Error != nil {
+					logrus.
+						WithField("key", riKey).
+						WithField("type", riValue.Error.Type).
+						WithField("phase", riValue.Error.Phase).
+						WithField("reason", riValue.Error.Reason).
+						Warningln("")
+				}
+			}
+		}
 	}
 
 	if err == nil {

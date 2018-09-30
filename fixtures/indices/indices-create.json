@@ -24,6 +24,12 @@
           },
           "name": {
             "type": "keyword"
+          },
+          "author": {
+            "properties": {
+              "name": {"type": "text"},
+              "email": {"type": "text"}
+            }
           }
         }
       }

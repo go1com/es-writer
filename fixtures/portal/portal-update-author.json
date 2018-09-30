@@ -1,0 +1,10 @@
+{
+  "uri": "/go1_qa/portal/111/_update?routing=go1_qa",
+  "body": {
+    "doc": {
+      "author": {
+        "name": "Truong"
+      }
+    }
+  }
+}

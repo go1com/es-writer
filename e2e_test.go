@@ -108,7 +108,7 @@ func TestIndicesCreate(t *testing.T) {
 	}
 
 	response := res["go1_qa"]
-	expecting := `{"portal":{"_routing":{"required":true},"properties":{"id":{"type":"keyword"},"name":{"type":"keyword"},"status":{"type":"short"},"title":{"fields":{"analyzed":{"type":"text"}},"type":"keyword"}}}}`
+	expecting := `{"portal":{"_routing":{"required":true},"properties":{"author":{"properties":{"email":{"type":"text"},"name":{"type":"text"}}},"id":{"type":"keyword"},"name":{"type":"keyword"},"status":{"type":"short"},"title":{"fields":{"analyzed":{"type":"text"}},"type":"keyword"}}}}`
 	actual, _ := json.Marshal(response.Mappings)
 	if expecting != string(actual) {
 		t.Fatal("failed")
@@ -198,6 +198,39 @@ func TestBulkUpdate(t *testing.T) {
 	correctStatus := strings.Contains(string(source), `"status":4`)
 	if !correctTitle || !correctStatus {
 		t.Error("failed to load portal document")
+	}
+}
+
+func TestGracefulUpdate(t *testing.T) {
+	ctx := context.Background()
+	f := flags()
+	dog, _, stop := f.Dog()
+	defer func() { stop <- true }()
+	defer dog.ch.QueuePurge(*f.QueueName, false)
+	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
+	go dog.Start(ctx, f)
+	time.Sleep(3 * time.Second)
+
+	queue(dog.ch, f, "indices/indices-create.json")      // create the index
+	queue(dog.ch, f, "portal/portal-update.json")        // portal.status = 0
+	queue(dog.ch, f, "portal/portal-update-author.json") // portal.author.name = truong
+	queue(dog.ch, f, "portal/portal-index.json")         // portal.status = 1
+	stand(dog)                                                // Wait a bit so that the message can be consumed.
+
+	res, _ := elastic.
+		NewGetService(dog.es).
+		Index("go1_qa").
+		Routing("go1_qa").
+		Type("portal").
+		Id("111").
+		FetchSource(true).
+		Do(ctx)
+
+	source, _ := json.Marshal(res.Source)
+	correctTitle := strings.Contains(string(source), `"title":"qa.mygo1.com"`)
+	correctStatus := strings.Contains(string(source), `"status":1`)
+	if !correctTitle || !correctStatus {
+		t.Error("failed gracefully update")
 	}
 }
 
