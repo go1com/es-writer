@@ -199,10 +199,46 @@ func (w *Dog) flush(ctx context.Context) {
 		bulk.Add(element)
 	}
 
-	res, err := bulk.Do(ctx)
-	if err != nil {
-		logrus.WithError(err).Errorln("failed flushing")
-	} else {
+	retries := []time.Duration{
+		15 * time.Second,
+		30 * time.Second,
+		60 * time.Second,
+		60 * time.Second,
+		90 * time.Second,
+		90 * time.Second,
+		90 * time.Second,
+	}
+
+	var hasError error
+	var retriableError bool
+
+	for _, retry := range retries {
+		res, err := bulk.Do(ctx)
+		if err != nil {
+			hasError = err
+			retriable := false
+
+			if strings.Contains(err.Error(), "no available connection") {
+				retriable = true
+			} else {
+				if strings.HasPrefix(err.Error(), "Post") {
+					if strings.HasSuffix(err.Error(), "EOF") {
+						retriable = true
+					}
+				}
+			}
+
+			if retriable {
+				retriableError = true
+				logrus.WithError(err).Warningln("failed flushing")
+				time.Sleep(retry)
+				continue
+			} else {
+				retriableError = false
+				break
+			}
+		}
+
 		for _, rItem := range res.Items {
 			for riKey, riValue := range rItem {
 				if riValue.Error != nil {
@@ -215,15 +251,20 @@ func (w *Dog) flush(ctx context.Context) {
 				}
 			}
 		}
+
+		break
 	}
 
-	if err == nil {
+	if hasError == nil {
 		for _, deliveryTag := range deliveryTags {
 			w.ch.Ack(deliveryTag, true)
 		}
 
 		w.actions.Clear()
 	} else {
-		// TODO: WHAT IF FAILED?
+		logrus.
+			WithError(hasError).
+			WithField("retriable", retriableError).
+			Panicln("failed flushing")
 	}
 }
