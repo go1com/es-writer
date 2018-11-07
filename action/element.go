@@ -69,6 +69,13 @@ func (e Element) Source() ([]string, error) {
 		}
 
 		return []string{NewCommand(e).String("update"), string(body)}, nil
+	} else if strings.HasSuffix(e.Uri, "/_aliases") {
+		body, err := json.Marshal(e.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		return []string{string(body)}, nil
 	} else if e.Method == "DELETE" {
 		return []string{NewCommand(e).String("delete")}, nil
 	} else {
@@ -105,6 +112,10 @@ func (e *Element) RequestType() string {
 
 	if strings.HasSuffix(e.Uri, "/_delete_by_query") {
 		return "delete_by_query"
+	}
+
+	if strings.HasSuffix(e.Uri, "/_aliases") {
+		return "indices_alias"
 	}
 
 	return "bulkable"

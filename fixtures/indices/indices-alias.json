@@ -1,0 +1,19 @@
+{
+  "http_method": "POST",
+  "uri": "/_aliases",
+  "body": {
+    "actions": [
+      {
+        "add": {
+          "index": "go1_qa",
+          "alias": "qa",
+          "filter": {
+            "term": {
+              "title": "qa.mygo1.com"
+            }
+          }
+        }
+      }
+    ]
+  }
+}
