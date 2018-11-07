@@ -185,7 +185,7 @@ func (w *Dog) doubleWoof(ctx context.Context, requestType string, element action
 	case "indices_alias":
 		res, err := action.CreateIndiceAlias(ctx, w.es, element)
 		if err != nil {
-			if strings.Contains(err.Error(), "xxxxxxxx") {
+			if strings.Contains(err.Error(), "index_not_found_exception") {
 				logrus.WithError(err).Errorln("That's ok if the index is existing.")
 				return nil
 			}
@@ -194,7 +194,6 @@ func (w *Dog) doubleWoof(ctx context.Context, requestType string, element action
 		logrus.
 			WithError(err).
 			WithField("action", "indices_alias").
-			// WithField("acknowledged", res.Acknowledged).
 			WithField("res", res).
 			WithField("body", element.String()).
 			Infoln("create")
