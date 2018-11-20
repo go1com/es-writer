@@ -9,6 +9,7 @@ import (
 	"gopkg.in/olivere/elastic.v5"
 	"gopkg.in/olivere/elastic.v5/config"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -37,6 +38,14 @@ func env(key string, defaultValue string) string {
 }
 
 func NewFlags() Flags {
+	var (
+		duration       = env("DURATION", "5")
+		iDuration, err = strconv.ParseInt(duration, 10, 64)
+	)
+	if err != nil {
+		logrus.WithError(err).Panicln("Duration is invalid.")
+	}
+
 	f := Flags{}
 	f.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
 	f.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
@@ -44,7 +53,7 @@ func NewFlags() Flags {
 	f.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "es.writer.go1"), "")
 	f.PrefetchCount = flag.Int("prefetch-count", 50, "")
 	f.PrefetchSize = flag.Int("prefetch-size", 0, "")
-	f.TickInterval = flag.Duration("tick-iterval", 5*time.Second, "")
+	f.TickInterval = flag.Duration("tick-iterval", time.Duration(iDuration) *time.Second, "")
 	f.QueueName = flag.String("queue-name", env("RABBITMQ_QUEUE_NAME", "es-writer"), "")
 	f.ConsumerName = flag.String("consumer-name", env("RABBITMQ_CONSUMER_NAME", "es-writter"), "")
 	f.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
