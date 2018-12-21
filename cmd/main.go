@@ -36,5 +36,7 @@ func main() {
 	}
 
 	defer func() { stop <- true }()
+
+	go es_writer.StartPrometheusServer(*f.PrometheusPort)
 	dog.Start(ctx, f)
 }

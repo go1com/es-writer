@@ -14,6 +14,10 @@
   name = "gopkg.in/olivere/elastic.v5"
   version = "5.0.72"
 
+[[constraint]]
+  name = "github.com/prometheus/client_golang"
+  version = "0.9.1"
+
 [prune]
   go-tests = true
   unused-packages = true

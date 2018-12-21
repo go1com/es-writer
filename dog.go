@@ -40,6 +40,7 @@ func (w *Dog) Start(ctx context.Context, flags Flags) (error) {
 		select {
 		case <-ticker.C:
 			if w.actions.Length() > 0 {
+				metricFlushCounter.WithLabelValues("time").Inc()
 				w.flush(ctx)
 			}
 
@@ -100,6 +101,7 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 
 	w.actions.Add(element)
 	if w.actions.Length() >= w.count {
+		metricFlushCounter.WithLabelValues("length").Inc()
 		w.flush(ctx)
 	}
 
@@ -107,24 +109,38 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 }
 
 func (w *Dog) doubleWoof(ctx context.Context, requestType string, element action.Element) error {
+	metricActionCounter.WithLabelValues(requestType).Inc()
+
 	switch requestType {
 	case "update_by_query":
 		service, err := element.UpdateByQueryService(w.es)
 		if err != nil {
+			metricFailureCounter.WithLabelValues(requestType).Inc()
 			return err
 		}
 
 		conflictRetryIntervals := []time.Duration{1 * time.Second, 2 * time.Second, 3 * time.Second, 7 * time.Second, 0}
 		for _, conflictRetryInterval := range conflictRetryIntervals {
+			start := time.Now()
 			_, err = service.Do(ctx)
+			metricDurationHistogram.
+				WithLabelValues(requestType).
+				Observe(time.Since(start).Seconds())
+
 			if err == nil {
 				break
 			}
 
 			if strings.Contains(err.Error(), "Error 409 (Conflict)") {
+				metricFailureCounter.WithLabelValues(requestType).Inc()
 				logrus.WithError(err).Errorf("writing has conflict; try again in %s.\n", conflictRetryInterval)
 				time.Sleep(conflictRetryInterval)
 			}
+			metricRetryCounter.WithLabelValues(requestType).Inc()
+		}
+
+		if err != nil {
+			metricFailureCounter.WithLabelValues(requestType).Inc()
 		}
 
 		return err
@@ -132,20 +148,33 @@ func (w *Dog) doubleWoof(ctx context.Context, requestType string, element action
 	case "delete_by_query":
 		service, err := element.DeleteByQueryService(w.es)
 		if err != nil {
+			metricFailureCounter.WithLabelValues(requestType).Inc()
 			return err
 		}
 
 		conflictRetryIntervals := []time.Duration{1 * time.Second, 2 * time.Second, 3 * time.Second, 7 * time.Second, 0}
 		for _, conflictRetryInterval := range conflictRetryIntervals {
+			start := time.Now()
 			_, err = service.Do(ctx)
+			metricDurationHistogram.
+				WithLabelValues(requestType).
+				Observe(time.Since(start).Seconds())
+
 			if err == nil {
 				break
 			}
 
 			if strings.Contains(err.Error(), "Error 409 (Conflict)") {
+				metricFailureCounter.WithLabelValues(requestType).Inc()
 				logrus.WithError(err).Errorf("deleting has conflict; try again in %s.\n", conflictRetryInterval)
 				time.Sleep(conflictRetryInterval)
 			}
+
+			metricRetryCounter.WithLabelValues(requestType).Inc()
+		}
+
+		if err != nil {
+			metricFailureCounter.WithLabelValues(requestType).Inc()
 		}
 
 		return err
@@ -201,6 +230,7 @@ func (w *Dog) doubleWoof(ctx context.Context, requestType string, element action
 		return err
 
 	default:
+		metricInvalidCounter.WithLabelValues(requestType).Inc()
 		return fmt.Errorf("unsupported request type: %s", requestType)
 	}
 
@@ -208,6 +238,7 @@ func (w *Dog) doubleWoof(ctx context.Context, requestType string, element action
 }
 
 func (w *Dog) flush(ctx context.Context) {
+	metricActionCounter.WithLabelValues("bulk").Inc()
 	// TODO: Need a review on refreshing flag here, this can make index very slowly
 	bulk := w.es.Bulk().Refresh("true")
 
@@ -231,7 +262,12 @@ func (w *Dog) flush(ctx context.Context) {
 	var retriableError bool
 
 	for _, retry := range retries {
+		start := time.Now()
 		res, err := bulk.Do(ctx)
+		metricDurationHistogram.
+			WithLabelValues("bulk").
+			Observe(time.Since(start).Seconds())
+
 		if err != nil {
 			hasError = err
 			retriable := false
@@ -247,6 +283,7 @@ func (w *Dog) flush(ctx context.Context) {
 			}
 
 			if retriable {
+				metricRetryCounter.WithLabelValues("bulk").Inc()
 				retriableError = true
 				logrus.WithError(err).Warningln("failed flushing")
 				time.Sleep(retry)
@@ -284,5 +321,7 @@ func (w *Dog) flush(ctx context.Context) {
 			WithError(hasError).
 			WithField("retriable", retriableError).
 			Panicln("failed flushing")
+
+		metricFailureCounter.WithLabelValues("bulk").Inc()
 	}
 }
