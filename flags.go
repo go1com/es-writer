@@ -14,18 +14,18 @@ import (
 )
 
 type Flags struct {
-	Url            *string
-	Kind           *string
-	Exchange       *string
-	RoutingKey     *string
-	PrefetchCount  *int
-	PrefetchSize   *int
-	TickInterval   *time.Duration
-	QueueName      *string
-	ConsumerName   *string
-	EsUrl          *string
-	PrometheusPort *string
-	Debug          *bool
+	Url           *string
+	Kind          *string
+	Exchange      *string
+	RoutingKey    *string
+	PrefetchCount *int
+	PrefetchSize  *int
+	TickInterval  *time.Duration
+	QueueName     *string
+	ConsumerName  *string
+	EsUrl         *string
+	AdminPort     *string
+	Debug         *bool
 }
 
 func env(key string, defaultValue string) string {
@@ -59,7 +59,7 @@ func NewFlags() Flags {
 	f.ConsumerName = flag.String("consumer-name", env("RABBITMQ_CONSUMER_NAME", "es-writter"), "")
 	f.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
 	f.Debug = flag.Bool("debug", false, "Enable with care; credentials can be leaked if this is on.")
-	f.PrometheusPort = flag.String("prometheus-port", env("PROMETHEUS_PORT", ":8001"), "")
+	f.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
 	flag.Parse()
 
 	return f
