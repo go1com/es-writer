@@ -142,7 +142,7 @@ func (e *Element) UpdateByQueryService(client *elastic.Client) (*elastic.UpdateB
 		Index(e.Index).
 		Type(e.DocType).
 		WaitForCompletion(true).
-		Refresh(e.Refresh)
+		Refresh("wait_for")
 
 	if e.Routing != "" {
 		service.Routing(e.Routing)
@@ -160,7 +160,7 @@ func (e *Element) DeleteByQueryService(client *elastic.Client) (*elastic.DeleteB
 		DeleteByQuery().
 		Index(e.Index).
 		WaitForCompletion(true).
-		Refresh(e.Refresh).
+		Refresh("wait_for").
 		Conflicts("proceed")
 
 	if e.Routing != "" {

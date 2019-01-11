@@ -114,8 +114,6 @@ func (w *Dog) doubleWoof(ctx context.Context, requestType string, element action
 
 	switch requestType {
 	case "update_by_query":
-		// Inherit refresh configuration
-		element.Refresh = w.refresh
 		service, err := element.UpdateByQueryService(w.es)
 		if err != nil {
 			metricFailureCounter.WithLabelValues(requestType).Inc()
@@ -149,8 +147,6 @@ func (w *Dog) doubleWoof(ctx context.Context, requestType string, element action
 		return err
 
 	case "delete_by_query":
-		// Inherit refresh configuration
-		element.Refresh = w.refresh
 		service, err := element.DeleteByQueryService(w.es)
 		if err != nil {
 			metricFailureCounter.WithLabelValues(requestType).Inc()
