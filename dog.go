@@ -308,7 +308,7 @@ func (w *Dog) flush(ctx context.Context) {
 			}
 		}
 
-		logrus.Debugln("[woof] bulk took: %d", res.Took)
+		logrus.Debugln("[woof] bulk took: ", res.Took)
 
 		break
 	}
