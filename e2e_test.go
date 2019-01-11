@@ -41,6 +41,8 @@ func flags() Flags {
 	f.EsUrl = &esUrl
 	debug := true
 	f.Debug = &debug
+	refresh := "true"
+	f.Refresh = &refresh
 
 	return f
 }
