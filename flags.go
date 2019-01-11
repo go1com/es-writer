@@ -26,6 +26,7 @@ type Flags struct {
 	EsUrl         *string
 	AdminPort     *string
 	Debug         *bool
+	Refresh       *string
 }
 
 func env(key string, defaultValue string) string {
@@ -60,6 +61,7 @@ func NewFlags() Flags {
 	f.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
 	f.Debug = flag.Bool("debug", false, "Enable with care; credentials can be leaked if this is on.")
 	f.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
+	f.Refresh = flag.String("refresh", env("ES_REFRESH", "true"), "")
 	flag.Parse()
 
 	return f
@@ -162,5 +164,6 @@ func (f *Flags) Dog() (*Dog, error, chan bool) {
 		actions: action.NewContainer(),
 		count:   *f.PrefetchCount,
 		es:      es,
+		refresh: *f.Refresh,
 	}, nil, stop
 }

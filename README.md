@@ -42,6 +42,7 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
         -queue-name      RABBITMQ_QUEUE_NAME<STRING=es-writer>
         -prefetch-count  RABBITMQ_PREFETCH_COUNT<INT=50>
         -es-url          ELASTIC_SEARCH_URL<STRING=http://127.0.0.1:9200/?sniff=false>
+        -refresh         true # Optional. allowed values: true, wait_for. default is true
         -admin-port      ADMIN_PORT<STRING=:8001>
 
 ### Notes

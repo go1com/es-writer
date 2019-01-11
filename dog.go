@@ -23,6 +23,7 @@ type Dog struct {
 	// ElasticSearch
 	es   *elastic.Client
 	bulk *elastic.BulkProcessor
+	refresh string
 }
 
 func (w *Dog) UnitWorks() int {
@@ -240,7 +241,7 @@ func (w *Dog) doubleWoof(ctx context.Context, requestType string, element action
 func (w *Dog) flush(ctx context.Context) {
 	metricActionCounter.WithLabelValues("bulk").Inc()
 	// TODO: Need a review on refreshing flag here, this can make index very slowly
-	bulk := w.es.Bulk().Refresh("true")
+	bulk := w.es.Bulk().Refresh(w.refresh)
 
 	deliveryTags := []uint64{}
 	for _, element := range w.actions.Elements() {
@@ -306,6 +307,8 @@ func (w *Dog) flush(ctx context.Context) {
 				}
 			}
 		}
+
+		logrus.Debugln("[woof] bulk took: %d", res.Took)
 
 		break
 	}
