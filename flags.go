@@ -48,12 +48,18 @@ func NewFlags() Flags {
 		logrus.WithError(err).Panicln("Duration is invalid.")
 	}
 
+	prefetchCount := env("RABBITMQ_PREFETCH_COUNT", "50")
+	iPrefetchCount, err := strconv.Atoi(prefetchCount)
+	if err != nil {
+		logrus.WithError(err).Panicln("prefetch-count is invalid.")
+	}
+
 	f := Flags{}
 	f.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
 	f.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
 	f.Exchange = flag.String("exchange", env("RABBITMQ_EXCHANGE", "events"), "")
 	f.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "es.writer.go1"), "")
-	f.PrefetchCount = flag.Int("prefetch-count", 50, "")
+	f.PrefetchCount = flag.Int("prefetch-count", iPrefetchCount, "")
 	f.PrefetchSize = flag.Int("prefetch-size", 0, "")
 	f.TickInterval = flag.Duration("tick-iterval", time.Duration(iDuration) *time.Second, "")
 	f.QueueName = flag.String("queue-name", env("RABBITMQ_QUEUE_NAME", "es-writer"), "")
