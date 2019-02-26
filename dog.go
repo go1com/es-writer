@@ -303,7 +303,7 @@ func (w *Dog) flush(ctx context.Context) {
 						WithField("type", riValue.Error.Type).
 						WithField("phase", riValue.Error.Phase).
 						WithField("reason", riValue.Error.Reason).
-						Warningln("")
+						Errorf("failed to process item %s", riKey)
 				}
 			}
 		}
