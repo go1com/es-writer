@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
-	"github.com/go1com/es-writer"
+	"os"
+
 	"github.com/sirupsen/logrus"
+
+	"github.com/go1com/es-writer"
 )
 
 func main() {
@@ -39,4 +42,6 @@ func main() {
 
 	go es_writer.StartPrometheusServer(*f.AdminPort)
 	dog.Start(ctx, f)
+
+	os.Exit(1)
 }

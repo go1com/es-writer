@@ -1,15 +1,17 @@
 package es_writer
 
 import (
-	"github.com/go1com/es-writer/action"
-
 	"context"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
-	"gopkg.in/olivere/elastic.v5"
 	"strings"
 	"time"
+
+	"github.com/go1com/es-writer/action"
+
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
+
+	"gopkg.in/olivere/elastic.v5"
 )
 
 type Dog struct {
@@ -21,8 +23,8 @@ type Dog struct {
 	count   int
 
 	// ElasticSearch
-	es   *elastic.Client
-	bulk *elastic.BulkProcessor
+	es      *elastic.Client
+	bulk    *elastic.BulkProcessor
 	refresh string
 }
 
@@ -30,7 +32,7 @@ func (w *Dog) UnitWorks() int {
 	return w.actions.Length()
 }
 
-func (w *Dog) Start(ctx context.Context, flags Flags) (error) {
+func (w *Dog) Start(ctx context.Context, flags Flags) error {
 	ticker := time.NewTicker(*flags.TickInterval)
 	messages, err := w.messages(flags)
 	if err != nil {
@@ -57,8 +59,6 @@ func (w *Dog) Start(ctx context.Context, flags Flags) (error) {
 			}
 		}
 	}
-
-	return nil
 }
 
 func (w *Dog) messages(flags Flags) (<-chan amqp.Delivery, error) {
