@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
-	"gopkg.in/olivere/elastic.v5"
 	"io/ioutil"
 	"math/rand"
 	"path"
@@ -14,12 +11,17 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
+
+	"gopkg.in/olivere/elastic.v5"
 )
 
 func flags() Flags {
 	f := Flags{}
 
-	url := env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/")
+	url := env("RABBITMQ_URL", "amqp://guest:guest@127.0.0.1:5672/")
 	f.Url = &url
 	kind := env("RABBITMQ_KIND", "topic")
 	f.Kind = &kind

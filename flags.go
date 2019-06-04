@@ -3,14 +3,16 @@ package es_writer
 import (
 	"flag"
 	"fmt"
-	"github.com/go1com/es-writer/action"
-	"github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
-	"gopkg.in/olivere/elastic.v5"
-	"gopkg.in/olivere/elastic.v5/config"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
+
+	"github.com/go1com/es-writer/action"
+	"gopkg.in/olivere/elastic.v5"
+	"gopkg.in/olivere/elastic.v5/config"
 )
 
 type Flags struct {
@@ -61,7 +63,7 @@ func NewFlags() Flags {
 	f.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "es.writer.go1"), "")
 	f.PrefetchCount = flag.Int("prefetch-count", iPrefetchCount, "")
 	f.PrefetchSize = flag.Int("prefetch-size", 0, "")
-	f.TickInterval = flag.Duration("tick-iterval", time.Duration(iDuration) *time.Second, "")
+	f.TickInterval = flag.Duration("tick-iterval", time.Duration(iDuration)*time.Second, "")
 	f.QueueName = flag.String("queue-name", env("RABBITMQ_QUEUE_NAME", "es-writer"), "")
 	f.ConsumerName = flag.String("consumer-name", env("RABBITMQ_CONSUMER_NAME", "es-writter"), "")
 	f.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
@@ -76,6 +78,7 @@ func NewFlags() Flags {
 func (f *Flags) queueConnection() (*amqp.Connection, error) {
 	url := *f.Url
 	con, err := amqp.Dial(url)
+
 	if nil != err {
 		return nil, err
 	}
