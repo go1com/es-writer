@@ -3,9 +3,9 @@ Elastic Search writer [![Build Status](https://travis-ci.org/go1com/es-writer.sv
 
 ## Problems
 
-It's every easy to have conflict when we have multiple services writing data into same Elastic Search server.
+It's very easy to have conflict when we have multiple services writing data into same Elastic Search server.
 
-To avoid this problems, the service shoudl publish message to a certain instead of writing to ES direclty. So that we can have ES-Writer, a single actor that connect with Elastic Search.
+To avoid this problem, the service should publish message to a certain instead of writing to ES direclty. So that we can have ES-Writer, a single actor that connect with Elastic Search.
 
 By this convention, the services doesn't need to know credentials of Elastic Search server.
 
