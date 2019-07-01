@@ -46,7 +46,10 @@ func main() {
 	signal.Notify(terminate, os.Interrupt, syscall.SIGTERM)
 
 	go es_writer.StartPrometheusServer(*f.AdminPort)
-	dog.Start(ctx, f)
+	err = dog.Start(ctx, f, terminate)
+	if err != nil {
+		logrus.Panic(err)
+	}
 
 	os.Exit(1)
 }
