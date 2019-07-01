@@ -8,7 +8,8 @@ import (
 )
 
 type RabbitMqInput struct {
-	ch *amqp.Channel
+	ch   *amqp.Channel
+	tags []uint64
 }
 
 func (w *Dog) messages(flags Flags) <-chan amqp.Delivery {
@@ -46,6 +47,6 @@ func (w *Dog) onRabbitMqMessage(ctx context.Context, m amqp.Delivery) {
 	}
 
 	if buffer {
-		w.deliveryTags = append(w.deliveryTags, m.DeliveryTag)
+		w.rabbit.tags = append(w.rabbit.tags, m.DeliveryTag)
 	}
 }

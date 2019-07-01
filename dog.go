@@ -17,10 +17,9 @@ type Dog struct {
 	debug bool
 
 	// RabbitMQ
-	rabbit       *RabbitMqInput
-	deliveryTags []uint64
-	actions      *action.Container
-	count        int
+	rabbit  *RabbitMqInput
+	actions *action.Container
+	count   int
 
 	// ElasticSearch
 	es      *elastic.Client
@@ -289,11 +288,11 @@ func (w *Dog) flush(ctx context.Context) {
 	}
 
 	if hasError == nil {
-		for _, deliveryTag := range w.deliveryTags {
-			w.ch.Ack(deliveryTag, true)
+		for _, deliveryTag := range w.rabbit.tags {
+			w.rabbit.ch.Ack(deliveryTag, true)
 		}
 
-		w.deliveryTags = w.deliveryTags[:0]
+		w.rabbit.tags = w.rabbit.tags[:0]
 		w.actions.Clear()
 	} else {
 		logrus.
