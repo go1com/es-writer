@@ -5,23 +5,22 @@ import (
 	"time"
 )
 
-func interval(w *Writer, ctx context.Context, flags Flags, terminate chan bool) {
+func interval(w *App, ctx context.Context, flags Flags, terminate chan bool) {
 	ticker := time.NewTicker(*flags.TickInterval)
 
 	for {
-		bufferMutext.Lock()
-
 		select {
 		case <-terminate:
 			return
 
 		case <-ticker.C:
-			if w.actions.Length() > 0 {
+			if w.buffer.Length() > 0 {
 				metricFlushCounter.WithLabelValues("time").Inc()
+
+				bufferMutext.Lock()
 				w.flush(ctx)
+				bufferMutext.Unlock()
 			}
 		}
-
-		bufferMutext.Unlock()
 	}
 }

@@ -50,16 +50,16 @@ func flags() Flags {
 	return f
 }
 
-func idle(w *Writer) {
+func idle(w *App) {
 	time.Sleep(2 * time.Second)
 	defer time.Sleep(5 * time.Second)
 
 	for {
-		units := w.UnitWorks()
+		units := w.buffer.Length()
 		if 0 == units {
 			break
 		} else {
-			logrus.Infof("Remaining actions: %d\n", units)
+			logrus.Infof("Remaining buffer: %d\n", units)
 		}
 
 		time.Sleep(2 * time.Second)
@@ -115,8 +115,9 @@ func TestIndicesCreate(t *testing.T) {
 	response := res["go1_qa"]
 	expecting := `{"portal":{"_routing":{"required":true},"properties":{"author":{"properties":{"email":{"type":"text"},"name":{"type":"text"}}},"id":{"type":"keyword"},"name":{"type":"keyword"},"status":{"type":"short"},"title":{"fields":{"analyzed":{"type":"text"}},"type":"keyword"}}}}`
 	actual, _ := json.Marshal(response.Mappings)
+
 	if expecting != string(actual) {
-		t.Fatal("failed")
+		t.Fail()
 	}
 }
 
@@ -171,7 +172,7 @@ func TestBulkCreate(t *testing.T) {
 	}
 }
 
-func TestBulkUpdate(t *testing.T) {
+func TestBulkableUpdate(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
 	dog, _, stop := f.Writer()
@@ -239,7 +240,7 @@ func TestGracefulUpdate(t *testing.T) {
 	}
 }
 
-func ___TestBulkUpdateConflict(t *testing.T) {
+func TestBulkUpdateConflict(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
 	dog, _, stop := f.Writer()

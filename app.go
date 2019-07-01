@@ -1,196 +1,194 @@
 package es_writer
 
 import (
-	"flag"
+	"context"
 	"fmt"
 	"os"
-	"strconv"
-	"sync"
+	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
-
-	"gopkg.in/olivere/elastic.v5"
-	"gopkg.in/olivere/elastic.v5/config"
-
 	"github.com/go1com/es-writer/action"
+
+	"github.com/sirupsen/logrus"
+	"gopkg.in/olivere/elastic.v5"
 )
 
-var (
-	bufferMutext    sync.Mutex
-	retriesInterval = []time.Duration{
-		15 * time.Second,
-		30 * time.Second,
-		60 * time.Second,
-		60 * time.Second,
-		90 * time.Second,
-		90 * time.Second,
-		90 * time.Second,
-	}
-)
+type PushCallback func(context.Context, []byte) (error, bool, bool)
 
-type Flags struct {
-	Url           *string
-	Kind          *string
-	Exchange      *string
-	RoutingKey    *string
-	PrefetchCount *int
-	PrefetchSize  *int
-	TickInterval  *time.Duration
-	QueueName     *string
-	ConsumerName  *string
-	EsUrl         *string
-	AdminPort     *string
-	Debug         *bool
-	Refresh       *string
+type App struct {
+	debug bool
+
+	// RabbitMQ
+	rabbit *RabbitMqInput
+	buffer *action.Container
+	count  int
+
+	// ElasticSearch
+	es      *elastic.Client
+	bulk    *elastic.BulkProcessor
+	refresh string
 }
 
-func env(key string, defaultValue string) string {
-	value, _ := os.LookupEnv(key)
+func (w *App) Start(ctx context.Context, flags Flags, terminate chan os.Signal) {
+	pushHandler := w.push()
 
-	if "" == value {
-		return defaultValue
-	}
+	terminateRabbit := make(chan bool)
+	go w.rabbit.start(ctx, flags, pushHandler, terminateRabbit)
 
-	return value
+	terminateInterval := make(chan bool)
+	go interval(w, ctx, flags, terminateInterval)
+
+	<-terminate
+	terminateRabbit <- true
+	terminateInterval <- true
 }
 
-func NewFlags() Flags {
-	var (
-		duration       = env("DURATION", "5")
-		iDuration, err = strconv.ParseInt(duration, 10, 64)
-	)
-	if err != nil {
-		logrus.WithError(err).Panicln("Duration is invalid.")
+func (w *App) push() PushCallback {
+	return func(ctx context.Context, body []byte) (error, bool, bool) {
+		buffer := false
+		ack := false
+		element, err := action.NewElement(body)
+		if err != nil {
+			return err, ack, buffer
+		}
+
+		// Not all requests are bulkable
+		requestType := element.RequestType()
+		if "bulkable" != requestType {
+			if w.buffer.Length() > 0 {
+				w.flush(ctx)
+			}
+
+			err = w.handleUnbulkableRequest(ctx, requestType, element)
+			ack = err == nil
+
+			return err, ack, buffer
+		}
+
+		w.buffer.Add(element)
+
+		if w.buffer.Length() < w.count {
+			buffer = true
+
+			return nil, ack, buffer
+		}
+
+		metricFlushCounter.WithLabelValues("length").Inc()
+		w.flush(ctx)
+
+		return nil, ack, buffer
 	}
-
-	prefetchCount := env("RABBITMQ_PREFETCH_COUNT", "50")
-	iPrefetchCount, err := strconv.Atoi(prefetchCount)
-	if err != nil {
-		logrus.WithError(err).Panicln("prefetch-count is invalid.")
-	}
-
-	f := Flags{}
-	f.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
-	f.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
-	f.Exchange = flag.String("exchange", env("RABBITMQ_EXCHANGE", "events"), "")
-	f.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "es.writer.go1"), "")
-	f.PrefetchCount = flag.Int("prefetch-count", iPrefetchCount, "")
-	f.PrefetchSize = flag.Int("prefetch-size", 0, "")
-	f.TickInterval = flag.Duration("tick-iterval", time.Duration(iDuration)*time.Second, "")
-	f.QueueName = flag.String("queue-name", env("RABBITMQ_QUEUE_NAME", "es-writer"), "")
-	f.ConsumerName = flag.String("consumer-name", env("RABBITMQ_CONSUMER_NAME", "es-writter"), "")
-	f.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
-	f.Debug = flag.Bool("debug", false, "Enable with care; credentials can be leaked if this is on.")
-	f.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
-	f.Refresh = flag.String("refresh", env("ES_REFRESH", "true"), "")
-	flag.Parse()
-
-	return f
 }
 
-func (f *Flags) queueConnection() (*amqp.Connection, error) {
-	url := *f.Url
-	con, err := amqp.Dial(url)
+func (w *App) handleUnbulkableRequest(ctx context.Context, requestType string, element action.Element) error {
+	defer metricActionCounter.WithLabelValues(requestType).Inc()
 
-	if nil != err {
-		return nil, err
+	switch requestType {
+	case "update_by_query":
+		return hanldeUpdateByQuery(ctx, w.es, element, requestType)
+
+	case "delete_by_query":
+		return hanldeDeleteByQuery(ctx, w.es, element, requestType)
+
+	case "indices_create":
+		return hanldeIndicesCreate(ctx, w.es, element)
+
+	case "indices_delete":
+		return handleIndicesDelete(ctx, w.es, element)
+
+	case "indices_alias":
+		return handleIndicesAlias(ctx, w.es, element)
+
+	default:
+		metricInvalidCounter.WithLabelValues(requestType).Inc()
+		return fmt.Errorf("unsupported request type: %s", requestType)
+	}
+}
+
+func (w *App) flush(ctx context.Context) {
+	metricActionCounter.WithLabelValues("bulk").Inc()
+	bulk := w.es.Bulk().Refresh(w.refresh)
+
+	for _, element := range w.buffer.Elements() {
+		bulk.Add(element)
 	}
 
-	go func() {
-		conCloseChan := con.NotifyClose(make(chan *amqp.Error))
+	w.doFlush(ctx, bulk)
+	w.buffer.Clear()
+	w.rabbit.onFlush()
+}
 
-		select
-		{
-		case err := <-conCloseChan:
-			if err != nil {
-				logrus.WithError(err).Panicln("RabbitMQ connection error.")
+func (w *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
+	var hasError error
+	var retriableError bool
+
+	for _, retry := range retriesInterval {
+		start := time.Now()
+		res, err := bulk.Do(ctx)
+		metricDurationHistogram.
+			WithLabelValues("bulk").
+			Observe(time.Since(start).Seconds())
+
+		if err != nil {
+			hasError = err
+
+			if w.isErrorRetriable(err) {
+				retriableError = true
+				time.Sleep(retry)
+				continue
+			} else {
+				retriableError = false
+				break
 			}
 		}
-	}()
 
-	return con, nil
+		w.verboseResponse(res)
+
+		break
+	}
+
+	if hasError != nil {
+		logrus.
+			WithError(hasError).
+			WithField("retriable", retriableError).
+			Panicln("failed flushing")
+
+		metricFailureCounter.WithLabelValues("bulk").Inc()
+	}
 }
 
-func (f *Flags) queueChannel(con *amqp.Connection) (*amqp.Channel, error) {
-	ch, err := con.Channel()
-	if nil != err {
-		return nil, err
+func (w *App) isErrorRetriable(err error) bool {
+	retriable := false
+
+	if strings.Contains(err.Error(), "no available connection") {
+		retriable = true
+	} else if strings.HasPrefix(err.Error(), "Post") {
+		if strings.HasSuffix(err.Error(), "EOF") {
+			retriable = true
+		}
 	}
 
-	if "topic" != *f.Kind && "direct" != *f.Kind {
-		ch.Close()
-
-		return nil, fmt.Errorf("unsupported channel kind: %s", *f.Kind)
+	if retriable {
+		metricRetryCounter.WithLabelValues("bulk").Inc()
+		logrus.WithError(err).Warningln("failed flushing")
 	}
 
-	err = ch.ExchangeDeclare(*f.Exchange, *f.Kind, false, false, false, false, nil)
-	if nil != err {
-		ch.Close()
-
-		return nil, err
-	}
-
-	err = ch.Qos(*f.PrefetchCount, *f.PrefetchSize, false)
-	if nil != err {
-		ch.Close()
-
-		return nil, err
-	}
-
-	return ch, nil
+	return retriable
 }
 
-func (f *Flags) elasticSearchClient() (*elastic.Client, error) {
-	cfg, err := config.Parse(*f.EsUrl)
-	if err != nil {
-		logrus.Fatalf("failed to parse URL: %s", err.Error())
-
-		return nil, err
+func (w *App) verboseResponse(res *elastic.BulkResponse) {
+	for _, rItem := range res.Items {
+		for riKey, riValue := range rItem {
+			if riValue.Error != nil {
+				logrus.
+					WithField("key", riKey).
+					WithField("type", riValue.Error.Type).
+					WithField("phase", riValue.Error.Phase).
+					WithField("reason", riValue.Error.Reason).
+					Errorf("failed to process item %s", riKey)
+			}
+		}
 	}
 
-	client, err := elastic.NewClientFromConfig(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return client, nil
-}
-
-func (f *Flags) Writer() (*Writer, error, chan bool) {
-	con, err := f.queueConnection()
-	if err != nil {
-		return nil, err, nil
-	}
-
-	ch, err := f.queueChannel(con)
-	if err != nil {
-		return nil, err, nil
-	}
-
-	es, err := f.elasticSearchClient()
-	if err != nil {
-		return nil, err, nil
-	}
-
-	stop := make(chan bool)
-
-	go func() {
-		<-stop
-		ch.Close()
-		con.Close()
-	}()
-
-	return &Writer{
-		debug: *f.Debug,
-		rabbit: &RabbitMqInput{
-			ch:   ch,
-			tags: []uint64{},
-		},
-		actions: action.NewContainer(),
-		count:   *f.PrefetchCount,
-		es:      es,
-		refresh: *f.Refresh,
-	}, nil, stop
+	logrus.Debugln("[push] bulk took: ", res.Took)
 }

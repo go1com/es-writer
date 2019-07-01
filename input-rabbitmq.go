@@ -2,6 +2,7 @@ package es_writer
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
@@ -34,21 +35,23 @@ func (r *RabbitMqInput) messages(flags Flags) <-chan amqp.Delivery {
 func (r *RabbitMqInput) start(ctx context.Context, flags Flags, pushHandler PushCallback, terminate chan bool) {
 	messages := r.messages(flags)
 	for {
-		bufferMutext.Lock()
-
 		select {
 		case <-terminate:
 			return
 
 		case m := <-messages:
+			bufferMutext.Lock()
 			r.onMessage(ctx, m, pushHandler)
+			bufferMutext.Unlock()
 		}
-		
-		bufferMutext.Unlock()
 	}
 }
 
 func (r *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, pushHandler PushCallback) {
+	if false {
+		fmt.Println("INPUT: ", string(m.Body))
+	}
+
 	if m.DeliveryTag == 0 {
 		r.ch.Nack(m.DeliveryTag, false, false)
 		return
@@ -66,4 +69,12 @@ func (r *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, pushHand
 	if buffer {
 		r.tags = append(r.tags, m.DeliveryTag)
 	}
+}
+
+func (r *RabbitMqInput) onFlush() {
+	for _, deliveryTag := range r.tags {
+		r.ch.Ack(deliveryTag, true)
+	}
+
+	r.tags = r.tags[:0]
 }
