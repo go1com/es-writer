@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -14,6 +15,19 @@ import (
 	"gopkg.in/olivere/elastic.v5/config"
 
 	"github.com/go1com/es-writer/action"
+)
+
+var (
+	bufferMutext    sync.Mutex
+	retriesInterval = []time.Duration{
+		15 * time.Second,
+		30 * time.Second,
+		60 * time.Second,
+		60 * time.Second,
+		90 * time.Second,
+		90 * time.Second,
+		90 * time.Second,
+	}
 )
 
 type Flags struct {
@@ -144,7 +158,7 @@ func (f *Flags) elasticSearchClient() (*elastic.Client, error) {
 	return client, nil
 }
 
-func (f *Flags) Dog() (*Dog, error, chan bool) {
+func (f *Flags) Writer() (*App, error, chan bool) {
 	con, err := f.queueConnection()
 	if err != nil {
 		return nil, err, nil
@@ -168,13 +182,15 @@ func (f *Flags) Dog() (*Dog, error, chan bool) {
 		con.Close()
 	}()
 
-	return &Dog{
-		debug:        *f.Debug,
-		deliveryTags: []uint64{},
-		ch:           ch,
-		actions:      action.NewContainer(),
-		count:        *f.PrefetchCount,
-		es:           es,
-		refresh:      *f.Refresh,
+	return &App{
+		debug: *f.Debug,
+		rabbit: &RabbitMqInput{
+			ch:   ch,
+			tags: []uint64{},
+		},
+		buffer:  action.NewContainer(),
+		count:   *f.PrefetchCount,
+		es:      es,
+		refresh: *f.Refresh,
 	}, nil, stop
 }

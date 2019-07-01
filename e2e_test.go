@@ -50,16 +50,16 @@ func flags() Flags {
 	return f
 }
 
-func idle(w *Dog) {
+func idle(w *App) {
 	time.Sleep(2 * time.Second)
 	defer time.Sleep(5 * time.Second)
 
 	for {
-		units := w.UnitWorks()
+		units := w.buffer.Length()
 		if 0 == units {
 			break
 		} else {
-			logrus.Infof("Remaining actions: %d\n", units)
+			logrus.Infof("Remaining buffer: %d\n", units)
 		}
 
 		time.Sleep(2 * time.Second)
@@ -97,17 +97,17 @@ func TestFlags(t *testing.T) {
 func TestIndicesCreate(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Dog()
+	writer, _, stop := f.Writer()
 	defer func() { stop <- true }()
-	defer dog.ch.QueuePurge(*f.QueueName, false)
-	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
-	go dog.Start(ctx, f, make(chan os.Signal))
+	defer writer.rabbit.ch.QueuePurge(*f.QueueName, false)
+	defer elastic.NewIndicesDeleteService(writer.es).Index([]string{"go1_qa"}).Do(ctx)
+	go writer.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json") // queue a message to rabbitMQ
-	idle(dog)                                       // Wait a bit so that the message can be consumed.
+	queue(writer.rabbit.ch, f, "indices/indices-create.json") // queue a message to rabbitMQ
+	idle(writer)                                              // Wait a bit so that the message can be consumed.
 
-	res, err := elastic.NewIndicesGetService(dog.es).Index("go1_qa").Do(ctx)
+	res, err := elastic.NewIndicesGetService(writer.es).Index("go1_qa").Do(ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -115,24 +115,25 @@ func TestIndicesCreate(t *testing.T) {
 	response := res["go1_qa"]
 	expecting := `{"portal":{"_routing":{"required":true},"properties":{"author":{"properties":{"email":{"type":"text"},"name":{"type":"text"}}},"id":{"type":"keyword"},"name":{"type":"keyword"},"status":{"type":"short"},"title":{"fields":{"analyzed":{"type":"text"}},"type":"keyword"}}}}`
 	actual, _ := json.Marshal(response.Mappings)
+
 	if expecting != string(actual) {
-		t.Fatal("failed")
+		t.Fail()
 	}
 }
 
 func TestIndicesDelete(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Dog()
+	dog, _, stop := f.Writer()
 	defer func() { stop <- true }()
-	defer dog.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json") // create the index
-	queue(dog.ch, f, "indices/indices-drop.json")   // then, drop it.
-	idle(dog)                                       // Wait a bit so that the message can be consumed.
+	queue(dog.rabbit.ch, f, "indices/indices-create.json") // create the index
+	queue(dog.rabbit.ch, f, "indices/indices-drop.json")   // then, drop it.
+	idle(dog)                                              // Wait a bit so that the message can be consumed.
 
 	_, err := elastic.NewIndicesGetService(dog.es).Index("go1_qa").Do(ctx)
 	if !strings.Contains(err.Error(), "[type=index_not_found_exception]") {
@@ -143,16 +144,16 @@ func TestIndicesDelete(t *testing.T) {
 func TestBulkCreate(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Dog()
+	dog, _, stop := f.Writer()
 	defer func() { stop <- true }()
-	defer dog.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json") // create the index
-	queue(dog.ch, f, "portal/portal-index.json")    // create portal object
-	idle(dog)                                       // Wait a bit so that the message can be consumed.
+	queue(dog.rabbit.ch, f, "indices/indices-create.json") // create the index
+	queue(dog.rabbit.ch, f, "portal/portal-index.json")    // create portal object
+	idle(dog)                                              // Wait a bit so that the message can be consumed.
 
 	res, _ := elastic.
 		NewGetService(dog.es).
@@ -171,23 +172,23 @@ func TestBulkCreate(t *testing.T) {
 	}
 }
 
-func TestBulkUpdate(t *testing.T) {
+func TestBulkableUpdate(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Dog()
+	dog, _, stop := f.Writer()
 	defer func() { stop <- true }()
-	defer dog.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json") // create the index
-	queue(dog.ch, f, "portal/portal-index.json")    // portal.status = 1
-	queue(dog.ch, f, "portal/portal-update.json")   // portal.status = 0
-	queue(dog.ch, f, "portal/portal-update-2.json") // portal.status = 2
-	queue(dog.ch, f, "portal/portal-update-3.json") // portal.status = 3
-	queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
-	idle(dog)                                       // Wait a bit so that the message can be consumed.
+	queue(dog.rabbit.ch, f, "indices/indices-create.json") // create the index
+	queue(dog.rabbit.ch, f, "portal/portal-index.json")    // portal.status = 1
+	queue(dog.rabbit.ch, f, "portal/portal-update.json")   // portal.status = 0
+	queue(dog.rabbit.ch, f, "portal/portal-update-2.json") // portal.status = 2
+	queue(dog.rabbit.ch, f, "portal/portal-update-3.json") // portal.status = 3
+	queue(dog.rabbit.ch, f, "portal/portal-update-4.json") // portal.status = 4
+	idle(dog)                                              // Wait a bit so that the message can be consumed.
 
 	res, _ := elastic.
 		NewGetService(dog.es).
@@ -209,18 +210,18 @@ func TestBulkUpdate(t *testing.T) {
 func TestGracefulUpdate(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Dog()
+	dog, _, stop := f.Writer()
 	defer func() { stop <- true }()
-	defer dog.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json")      // create the index
-	queue(dog.ch, f, "portal/portal-update.json")        // portal.status = 0
-	queue(dog.ch, f, "portal/portal-update-author.json") // portal.author.name = truong
-	queue(dog.ch, f, "portal/portal-index.json")         // portal.status = 1
-	idle(dog)                                            // Wait a bit so that the message can be consumed.
+	queue(dog.rabbit.ch, f, "indices/indices-create.json")      // create the index
+	queue(dog.rabbit.ch, f, "portal/portal-update.json")        // portal.status = 0
+	queue(dog.rabbit.ch, f, "portal/portal-update-author.json") // portal.author.name = truong
+	queue(dog.rabbit.ch, f, "portal/portal-index.json")         // portal.status = 1
+	idle(dog)                                                   // Wait a bit so that the message can be consumed.
 
 	res, _ := elastic.
 		NewGetService(dog.es).
@@ -242,9 +243,9 @@ func TestGracefulUpdate(t *testing.T) {
 func TestBulkUpdateConflict(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Dog()
+	dog, _, stop := f.Writer()
 	defer func() { stop <- true }()
-	defer dog.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
@@ -262,8 +263,8 @@ func TestBulkUpdateConflict(t *testing.T) {
 	}
 
 	// Create the portal first.
-	queue(dog.ch, f, "indices/indices-create.json") // create the index
-	queue(dog.ch, f, "portal/portal-index.json")    // portal.status = 1
+	queue(dog.rabbit.ch, f, "indices/indices-create.json") // create the index
+	queue(dog.rabbit.ch, f, "portal/portal-index.json")    // portal.status = 1
 	idle(dog)
 
 	fixtures := []string{
@@ -280,10 +281,10 @@ func TestBulkUpdateConflict(t *testing.T) {
 
 		for count := 1; count <= *f.PrefetchCount; count++ {
 			fixture := fixtures[r.Intn(len(fixtures))]
-			queue(dog.ch, f, fixture) // portal.status = 0
+			queue(dog.rabbit.ch, f, fixture) // portal.status = 0
 		}
 
-		queue(dog.ch, f, "portal/portal-update-4.json") // portal.status = 4
+		queue(dog.rabbit.ch, f, "portal/portal-update-4.json") // portal.status = 4
 		idle(dog)
 		portal := load()
 		if !strings.Contains(portal, `"status":4`) {
@@ -295,17 +296,17 @@ func TestBulkUpdateConflict(t *testing.T) {
 func TestBulkableDelete(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Dog()
+	dog, _, stop := f.Writer()
 	defer func() { stop <- true }()
-	defer dog.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json") // create the index
-	queue(dog.ch, f, "portal/portal-index.json")    // create portal object
-	queue(dog.ch, f, "portal/portal-delete.json")   // update portal object
-	idle(dog)                                       // Wait a bit so that the message can be consumed.
+	queue(dog.rabbit.ch, f, "indices/indices-create.json") // create the index
+	queue(dog.rabbit.ch, f, "portal/portal-index.json")    // create portal object
+	queue(dog.rabbit.ch, f, "portal/portal-delete.json")   // update portal object
+	idle(dog)                                              // Wait a bit so that the message can be consumed.
 
 	_, err := elastic.
 		NewGetService(dog.es).
@@ -324,18 +325,18 @@ func TestBulkableDelete(t *testing.T) {
 func TestUpdateByQuery(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Dog()
+	dog, _, stop := f.Writer()
 	defer func() { stop <- true }()
-	defer dog.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json")        // create the index
-	queue(dog.ch, f, "portal/portal-index.json")           // create portal, status is 1
-	queue(dog.ch, f, "portal/portal-update.json")          // update portal status to 0
-	queue(dog.ch, f, "portal/portal-update-by-query.json") // update portal status to 2
-	idle(dog)                                              // Wait a bit so that the message can be consumed.
+	queue(dog.rabbit.ch, f, "indices/indices-create.json")        // create the index
+	queue(dog.rabbit.ch, f, "portal/portal-index.json")           // create portal, status is 1
+	queue(dog.rabbit.ch, f, "portal/portal-update.json")          // update portal status to 0
+	queue(dog.rabbit.ch, f, "portal/portal-update-by-query.json") // update portal status to 2
+	idle(dog)                                                     // Wait a bit so that the message can be consumed.
 
 	res, err := elastic.
 		NewGetService(dog.es).
@@ -362,17 +363,17 @@ func TestUpdateByQuery(t *testing.T) {
 func TestDeleteByQuery(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Dog()
+	dog, _, stop := f.Writer()
 	defer func() { stop <- true }()
-	defer dog.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json")        // create the index
-	queue(dog.ch, f, "portal/portal-index.json")           // create portal, status is 1
-	queue(dog.ch, f, "portal/portal-delete-by-query.json") // update portal status to 0
-	idle(dog)                                              // Wait a bit so that the message can be consumed.
+	queue(dog.rabbit.ch, f, "indices/indices-create.json")        // create the index
+	queue(dog.rabbit.ch, f, "portal/portal-index.json")           // create portal, status is 1
+	queue(dog.rabbit.ch, f, "portal/portal-delete-by-query.json") // update portal status to 0
+	idle(dog)                                                     // Wait a bit so that the message can be consumed.
 
 	_, err := elastic.
 		NewGetService(dog.es).
@@ -391,16 +392,16 @@ func TestDeleteByQuery(t *testing.T) {
 func TestCreateIndexAlias(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Dog()
+	dog, _, stop := f.Writer()
 	defer func() { stop <- true }()
-	defer dog.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
-	queue(dog.ch, f, "indices/indices-create.json")
-	queue(dog.ch, f, "portal/portal-index.json")
-	queue(dog.ch, f, "indices/indices-alias.json")
+	queue(dog.rabbit.ch, f, "indices/indices-create.json")
+	queue(dog.rabbit.ch, f, "portal/portal-index.json")
+	queue(dog.rabbit.ch, f, "indices/indices-alias.json")
 	idle(dog) // Wait a bit so that the message can be consumed.
 
 	res, err := elastic.
