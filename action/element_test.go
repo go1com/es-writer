@@ -1,11 +1,11 @@
 package action
 
 import (
-	"testing"
-	"runtime"
-	"path"
 	"io/ioutil"
+	"path"
+	"runtime"
 	"strings"
+	"testing"
 )
 
 func fileGetContent(filePath string) []byte {
@@ -17,7 +17,7 @@ func fileGetContent(filePath string) []byte {
 }
 
 func TestBulkCommandBuiler(t *testing.T) {
-	e, err := NewElement(0, fileGetContent("portal/portal-index.json"))
+	e, err := NewElement(fileGetContent("portal/portal-index.json"))
 	if err != nil {
 		t.Fatalf("failed to create element: %s.", err.Error())
 	}
@@ -35,7 +35,7 @@ func TestBulkCommandBuiler(t *testing.T) {
 }
 
 func TestCreateUpdateRequest(t *testing.T) {
-	e, err := NewElement(0, fileGetContent("portal/portal-update.json"))
+	e, err := NewElement(fileGetContent("portal/portal-update.json"))
 	if err != nil {
 		t.Fatalf("failed to create element: %s.", err.Error())
 	}
