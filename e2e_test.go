@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"path"
 	"runtime"
 	"strings"
@@ -100,7 +101,7 @@ func TestIndicesCreate(t *testing.T) {
 	defer func() { stop <- true }()
 	defer dog.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
-	go dog.Start(ctx, f)
+	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
 	queue(dog.ch, f, "indices/indices-create.json") // queue a message to rabbitMQ
@@ -126,7 +127,7 @@ func TestIndicesDelete(t *testing.T) {
 	defer func() { stop <- true }()
 	defer dog.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
-	go dog.Start(ctx, f)
+	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
@@ -146,7 +147,7 @@ func TestBulkCreate(t *testing.T) {
 	defer func() { stop <- true }()
 	defer dog.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
-	go dog.Start(ctx, f)
+	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
@@ -177,7 +178,7 @@ func TestBulkUpdate(t *testing.T) {
 	defer func() { stop <- true }()
 	defer dog.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
-	go dog.Start(ctx, f)
+	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
@@ -212,7 +213,7 @@ func TestGracefulUpdate(t *testing.T) {
 	defer func() { stop <- true }()
 	defer dog.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
-	go dog.Start(ctx, f)
+	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
 	queue(dog.ch, f, "indices/indices-create.json")      // create the index
@@ -245,7 +246,7 @@ func TestBulkUpdateConflict(t *testing.T) {
 	defer func() { stop <- true }()
 	defer dog.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
-	go dog.Start(ctx, f)
+	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
 	load := func() string {
@@ -298,7 +299,7 @@ func TestBulkableDelete(t *testing.T) {
 	defer func() { stop <- true }()
 	defer dog.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
-	go dog.Start(ctx, f)
+	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
 	queue(dog.ch, f, "indices/indices-create.json") // create the index
@@ -327,7 +328,7 @@ func TestUpdateByQuery(t *testing.T) {
 	defer func() { stop <- true }()
 	defer dog.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
-	go dog.Start(ctx, f)
+	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
 	queue(dog.ch, f, "indices/indices-create.json")        // create the index
@@ -365,7 +366,7 @@ func TestDeleteByQuery(t *testing.T) {
 	defer func() { stop <- true }()
 	defer dog.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
-	go dog.Start(ctx, f)
+	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
 	queue(dog.ch, f, "indices/indices-create.json")        // create the index
@@ -394,7 +395,7 @@ func TestCreateIndexAlias(t *testing.T) {
 	defer func() { stop <- true }()
 	defer dog.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
-	go dog.Start(ctx, f)
+	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
 	queue(dog.ch, f, "indices/indices-create.json")
