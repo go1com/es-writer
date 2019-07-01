@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/sirupsen/logrus"
 
@@ -39,6 +41,9 @@ func main() {
 	}
 
 	defer func() { stop <- true }()
+
+	terminate := make(chan os.Signal, 1)
+	signal.Notify(terminate, os.Interrupt, syscall.SIGTERM)
 
 	go es_writer.StartPrometheusServer(*f.AdminPort)
 	dog.Start(ctx, f)

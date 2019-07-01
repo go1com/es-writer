@@ -3,6 +3,7 @@ package es_writer
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -32,15 +33,15 @@ func (w *Dog) UnitWorks() int {
 	return w.actions.Length()
 }
 
-func (w *Dog) Start(ctx context.Context, flags Flags) error {
+func (w *Dog) Start(ctx context.Context, flags Flags, terminate chan os.Signal) error {
 	ticker := time.NewTicker(*flags.TickInterval)
-	messages, err := w.messages(flags)
-	if err != nil {
-		return err
-	}
+	messages := w.messages(flags)
 
 	for {
 		select {
+		case <-terminate:
+			return nil
+
 		case <-ticker.C:
 			if w.actions.Length() > 0 {
 				metricFlushCounter.WithLabelValues("time").Inc()
@@ -234,8 +235,6 @@ func (w *Dog) doubleWoof(ctx context.Context, requestType string, element action
 		metricInvalidCounter.WithLabelValues(requestType).Inc()
 		return fmt.Errorf("unsupported request type: %s", requestType)
 	}
-
-	return nil
 }
 
 func (w *Dog) flush(ctx context.Context) {
