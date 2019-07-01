@@ -8,10 +8,9 @@ import (
 	"strings"
 )
 
-func NewElement(deliveryTag uint64, raw []byte) (Element, error) {
+func NewElement(raw []byte) (Element, error) {
 	e := Element{}
-	e.DeliveryTag = deliveryTag
-
+	
 	err := json.Unmarshal(raw, &e)
 	if err != nil {
 		return e, fmt.Errorf("failed to parse element body: %s", err.Error())

@@ -3,16 +3,15 @@ package action
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/jmespath/go-jmespath"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/olivere/elastic.v5"
-	"strings"
 )
 
 type Element struct {
 	elastic.BulkableRequest
-
-	DeliveryTag uint64
 
 	Method            string      `json:"http_method"`
 	Uri               string      `json:"uri"`

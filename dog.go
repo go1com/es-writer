@@ -19,9 +19,10 @@ type Dog struct {
 	debug bool
 
 	// RabbitMQ
-	ch      *amqp.Channel
-	actions *action.Container
-	count   int
+	deliveryTags []uint64
+	ch           *amqp.Channel
+	actions      *action.Container
+	count        int
 
 	// ElasticSearch
 	es      *elastic.Client
@@ -63,7 +64,7 @@ func (w *Dog) Start(ctx context.Context, flags Flags, terminate chan os.Signal) 
 }
 
 func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
-	element, err := action.NewElement(m.DeliveryTag, m.Body)
+	element, err := action.NewElement(m.Body)
 	if err != nil {
 		return err
 	}
@@ -87,6 +88,7 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 		logrus.Debugln("[woof] bulkable action: ", w.actions.Length()+1)
 	}
 
+	w.deliveryTags = append(w.deliveryTags, m.DeliveryTag)
 	w.actions.Add(element)
 	if w.actions.Length() >= w.count {
 		metricFlushCounter.WithLabelValues("length").Inc()
@@ -228,9 +230,7 @@ func (w *Dog) flush(ctx context.Context) {
 	// TODO: Need a review on refreshing flag here, this can make index very slowly
 	bulk := w.es.Bulk().Refresh(w.refresh)
 
-	deliveryTags := []uint64{}
 	for _, element := range w.actions.Elements() {
-		deliveryTags = append(deliveryTags, element.DeliveryTag)
 		bulk.Add(element)
 	}
 
@@ -299,10 +299,11 @@ func (w *Dog) flush(ctx context.Context) {
 	}
 
 	if hasError == nil {
-		for _, deliveryTag := range deliveryTags {
+		for _, deliveryTag := range w.deliveryTags {
 			w.ch.Ack(deliveryTag, true)
 		}
 
+		w.deliveryTags = w.deliveryTags[:0]
 		w.actions.Clear()
 	} else {
 		logrus.
