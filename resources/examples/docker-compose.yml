@@ -4,9 +4,9 @@ services:
     image: rabbitmq:3-management
   es:
     image: go1com/ci-elasticsearch
-  dog:
+  writer:
     image: andytruong/es-writer:latest
     links: ["queue", "es"]
     environment:
-      RABBITMQ_URL: "amqp://go1:go1@queue:5672/"
+      RABBITMQ_URL:       "amqp://go1:go1@queue:5672/"
       ELASTIC_SEARCH_URL: "http://es:9200/?sniff=false"

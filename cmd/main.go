@@ -33,11 +33,11 @@ func main() {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	dog, err, stop := f.Dog()
+	writer, err, stop := f.Writer()
 	if err != nil {
 		logrus.
 			WithError(err).
-			Panicln("failed to get the dog")
+			Panicln("failed to get the writer")
 	}
 
 	defer func() { stop <- true }()
@@ -46,7 +46,7 @@ func main() {
 	signal.Notify(terminate, os.Interrupt, syscall.SIGTERM)
 
 	go es_writer.StartPrometheusServer(*f.AdminPort)
-	err = dog.Start(ctx, f, terminate)
+	err = writer.Start(ctx, f, terminate)
 	if err != nil {
 		logrus.Panic(err)
 	}

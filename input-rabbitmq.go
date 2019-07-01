@@ -12,18 +12,18 @@ type RabbitMqInput struct {
 	tags []uint64
 }
 
-func (w *Dog) messages(flags Flags) <-chan amqp.Delivery {
-	queue, err := w.rabbit.ch.QueueDeclare(*flags.QueueName, false, false, false, false, nil, )
+func (r *RabbitMqInput) messages(flags Flags) <-chan amqp.Delivery {
+	queue, err := r.ch.QueueDeclare(*flags.QueueName, false, false, false, false, nil, )
 	if nil != err {
 		logrus.Panic(err)
 	}
 
-	err = w.rabbit.ch.QueueBind(queue.Name, *flags.RoutingKey, *flags.Exchange, true, nil)
+	err = r.ch.QueueBind(queue.Name, *flags.RoutingKey, *flags.Exchange, true, nil)
 	if nil != err {
 		logrus.Panic(err)
 	}
 
-	messages, err := w.rabbit.ch.Consume(queue.Name, *flags.ConsumerName, false, false, false, true, nil)
+	messages, err := r.ch.Consume(queue.Name, *flags.ConsumerName, false, false, false, true, nil)
 	if nil != err {
 		logrus.Panic(err)
 	}
@@ -31,22 +31,39 @@ func (w *Dog) messages(flags Flags) <-chan amqp.Delivery {
 	return messages
 }
 
-func (w *Dog) onRabbitMqMessage(ctx context.Context, m amqp.Delivery) {
+func (r *RabbitMqInput) start(ctx context.Context, flags Flags, pushHandler PushCallback, terminate chan bool) {
+	messages := r.messages(flags)
+	for {
+		bufferMutext.Lock()
+
+		select {
+		case <-terminate:
+			return
+
+		case m := <-messages:
+			r.onMessage(ctx, m, pushHandler)
+		}
+		
+		bufferMutext.Unlock()
+	}
+}
+
+func (r *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, pushHandler PushCallback) {
 	if m.DeliveryTag == 0 {
-		w.rabbit.ch.Nack(m.DeliveryTag, false, false)
+		r.ch.Nack(m.DeliveryTag, false, false)
 		return
 	}
 
-	err, ack, buffer := w.woof(ctx, m.Body)
+	err, ack, buffer := pushHandler(ctx, m.Body)
 	if err != nil {
 		logrus.WithError(err).Errorln("Failed to handle new message: " + string(m.Body))
 	}
 
 	if ack {
-		w.rabbit.ch.Ack(m.DeliveryTag, true)
+		r.ch.Ack(m.DeliveryTag, true)
 	}
 
 	if buffer {
-		w.rabbit.tags = append(w.rabbit.tags, m.DeliveryTag)
+		r.tags = append(r.tags, m.DeliveryTag)
 	}
 }
