@@ -57,7 +57,7 @@ Limit these kinds of request because they are not bulkable:
 ### Test local
 
 ```
-docker run -d -p 9200:9200 --rm --name es elasticsearch:5-alpine
+docker run -d -p 9200:9200                --rm --name es       elasticsearch:5-alpine
 docker run -d -p 5672:5672 -p 15672:15672 --rm --name rabbitmq rabbitmq:3-management
 go test -race -v ./...
 ```
