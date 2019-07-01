@@ -10,9 +10,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 
-	"github.com/go1com/es-writer/action"
 	"gopkg.in/olivere/elastic.v5"
 	"gopkg.in/olivere/elastic.v5/config"
+
+	"github.com/go1com/es-writer/action"
 )
 
 type Flags struct {
@@ -168,11 +169,12 @@ func (f *Flags) Dog() (*Dog, error, chan bool) {
 	}()
 
 	return &Dog{
-		debug:   *f.Debug,
-		ch:      ch,
-		actions: action.NewContainer(),
-		count:   *f.PrefetchCount,
-		es:      es,
-		refresh: *f.Refresh,
+		debug:        *f.Debug,
+		deliveryTags: []uint64{},
+		ch:           ch,
+		actions:      action.NewContainer(),
+		count:        *f.PrefetchCount,
+		es:           es,
+		refresh:      *f.Refresh,
 	}, nil, stop
 }
