@@ -10,8 +10,6 @@ import (
 	"github.com/go1com/es-writer/action"
 
 	"github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
-
 	"gopkg.in/olivere/elastic.v5"
 )
 
@@ -19,8 +17,8 @@ type Dog struct {
 	debug bool
 
 	// RabbitMQ
+	rabbit       *RabbitMqInput
 	deliveryTags []uint64
-	ch           *amqp.Channel
 	actions      *action.Container
 	count        int
 
@@ -50,23 +48,17 @@ func (w *Dog) Start(ctx context.Context, flags Flags, terminate chan os.Signal) 
 			}
 
 		case m := <-messages:
-			if m.DeliveryTag == 0 {
-				w.ch.Nack(m.DeliveryTag, false, false)
-				continue
-			}
-
-			err := w.woof(ctx, m)
-			if err != nil {
-				logrus.WithError(err).Errorln("Failed to handle new message: " + string(m.Body))
-			}
+			w.onRabbitMqMessage(ctx, m)
 		}
 	}
 }
 
-func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
-	element, err := action.NewElement(m.Body)
+func (w *Dog) woof(ctx context.Context, body []byte) (error, bool, bool) {
+	buffer := false
+	ack := false
+	element, err := action.NewElement(body)
 	if err != nil {
-		return err
+		return err, ack, buffer
 	}
 
 	// Not all requests are bulkable
@@ -77,25 +69,23 @@ func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 		}
 
 		err = w.doubleWoof(ctx, requestType, element)
-		if err == nil {
-			w.ch.Ack(m.DeliveryTag, true)
-		}
+		ack = err == nil
 
-		return err
+		return err, ack, buffer
 	}
 
-	if w.debug {
-		logrus.Debugln("[woof] bulkable action: ", w.actions.Length()+1)
-	}
-
-	w.deliveryTags = append(w.deliveryTags, m.DeliveryTag)
 	w.actions.Add(element)
-	if w.actions.Length() >= w.count {
-		metricFlushCounter.WithLabelValues("length").Inc()
-		w.flush(ctx)
+
+	if w.actions.Length() < w.count {
+		buffer = true
+
+		return nil, ack, buffer
 	}
 
-	return nil
+	metricFlushCounter.WithLabelValues("length").Inc()
+	w.flush(ctx)
+
+	return nil, ack, buffer
 }
 
 func (w *Dog) doubleWoof(ctx context.Context, requestType string, element action.Element) error {

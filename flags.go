@@ -171,10 +171,12 @@ func (f *Flags) Dog() (*Dog, error, chan bool) {
 	return &Dog{
 		debug:        *f.Debug,
 		deliveryTags: []uint64{},
-		ch:           ch,
-		actions:      action.NewContainer(),
-		count:        *f.PrefetchCount,
-		es:           es,
-		refresh:      *f.Refresh,
+		rabbit: &RabbitMqInput{
+			ch: ch,
+		},
+		actions: action.NewContainer(),
+		count:   *f.PrefetchCount,
+		es:      es,
+		refresh: *f.Refresh,
 	}, nil, stop
 }
