@@ -62,20 +62,6 @@ func (w *Dog) Start(ctx context.Context, flags Flags, terminate chan os.Signal) 
 	}
 }
 
-func (w *Dog) messages(flags Flags) (<-chan amqp.Delivery, error) {
-	queue, err := w.ch.QueueDeclare(*flags.QueueName, false, false, false, false, nil, )
-	if nil != err {
-		return nil, err
-	}
-
-	err = w.ch.QueueBind(queue.Name, *flags.RoutingKey, *flags.Exchange, true, nil)
-	if nil != err {
-		return nil, err
-	}
-
-	return w.ch.Consume(queue.Name, *flags.ConsumerName, false, false, false, true, nil)
-}
-
 func (w *Dog) woof(ctx context.Context, m amqp.Delivery) error {
 	element, err := action.NewElement(m.DeliveryTag, m.Body)
 	if err != nil {
