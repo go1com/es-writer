@@ -63,7 +63,7 @@ func (r *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, pushHand
 	}
 
 	if ack {
-		r.ch.Ack(m.DeliveryTag, true)
+		r.ch.Ack(m.DeliveryTag, false)
 	}
 
 	if buffer {
