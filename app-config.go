@@ -162,7 +162,7 @@ func (f *Flags) elasticSearchClient() (*elastic.Client, error) {
 	return client, nil
 }
 
-func (f *Flags) Writer() (*App, error, chan bool) {
+func (f *Flags) App() (*App, error, chan bool) {
 	con, err := f.queueConnection()
 	if err != nil {
 		return nil, err, nil
