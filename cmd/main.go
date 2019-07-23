@@ -17,7 +17,7 @@ func main() {
 
 	// Credentials can be leaked with debug enabled.
 	if *f.Debug {
-		logrus.Infoln("======= ElasticSearch-Writer =======")
+		logrus.Infoln("======= ElasticSearch-App =======")
 		logrus.Infof("RabbitMQ URL: %s", *f.Url)
 		logrus.Infof("RabbitMQ kind: %s", *f.Kind)
 		logrus.Infof("RabbitMQ exchange: %s", *f.Exchange)
@@ -33,11 +33,11 @@ func main() {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	writer, err, stop := f.Writer()
+	app, err, stop := f.App()
 	if err != nil {
 		logrus.
 			WithError(err).
-			Panicln("failed to get the writer")
+			Panicln("failed to get the app")
 	}
 
 	defer func() { stop <- true }()
@@ -46,7 +46,7 @@ func main() {
 	signal.Notify(terminate, os.Interrupt, syscall.SIGTERM)
 
 	go es_writer.StartPrometheusServer(*f.AdminPort)
-	writer.Start(ctx, f, terminate)
+	app.Start(ctx, f, terminate)
 
 	os.Exit(1)
 }

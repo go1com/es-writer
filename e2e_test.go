@@ -38,6 +38,10 @@ func flags() Flags {
 	f.TickInterval = &tickInterval
 	queueName := "es-writer-qa"
 	f.QueueName = &queueName
+	urlContain := ""
+	f.UrlContain = &urlContain
+	urlNotContain := ""
+	f.UrlNotContain = &urlNotContain
 	ConsumerName := ""
 	f.ConsumerName = &ConsumerName
 	esUrl := env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false")
@@ -97,7 +101,7 @@ func TestFlags(t *testing.T) {
 func TestIndicesCreate(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	writer, _, stop := f.Writer()
+	writer, _, stop := f.App()
 	defer func() { stop <- true }()
 	defer writer.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(writer.es).Index([]string{"go1_qa"}).Do(ctx)
@@ -124,7 +128,7 @@ func TestIndicesCreate(t *testing.T) {
 func TestIndicesDelete(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Writer()
+	dog, _, stop := f.App()
 	defer func() { stop <- true }()
 	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
@@ -144,7 +148,7 @@ func TestIndicesDelete(t *testing.T) {
 func TestBulkCreate(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Writer()
+	dog, _, stop := f.App()
 	defer func() { stop <- true }()
 	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
@@ -175,7 +179,7 @@ func TestBulkCreate(t *testing.T) {
 func TestBulkableUpdate(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Writer()
+	dog, _, stop := f.App()
 	defer func() { stop <- true }()
 	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
@@ -210,7 +214,7 @@ func TestBulkableUpdate(t *testing.T) {
 func TestGracefulUpdate(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Writer()
+	dog, _, stop := f.App()
 	defer func() { stop <- true }()
 	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
@@ -243,7 +247,7 @@ func TestGracefulUpdate(t *testing.T) {
 func TestBulkUpdateConflict(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Writer()
+	dog, _, stop := f.App()
 	defer func() { stop <- true }()
 	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
@@ -296,7 +300,7 @@ func TestBulkUpdateConflict(t *testing.T) {
 func TestBulkableDelete(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Writer()
+	dog, _, stop := f.App()
 	defer func() { stop <- true }()
 	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
@@ -325,7 +329,7 @@ func TestBulkableDelete(t *testing.T) {
 func TestUpdateByQuery(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Writer()
+	dog, _, stop := f.App()
 	defer func() { stop <- true }()
 	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
@@ -363,7 +367,7 @@ func TestUpdateByQuery(t *testing.T) {
 func TestDeleteByQuery(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Writer()
+	dog, _, stop := f.App()
 	defer func() { stop <- true }()
 	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
@@ -392,7 +396,7 @@ func TestDeleteByQuery(t *testing.T) {
 func TestCreateIndexAlias(t *testing.T) {
 	ctx := context.Background()
 	f := flags()
-	dog, _, stop := f.Writer()
+	dog, _, stop := f.App()
 	defer func() { stop <- true }()
 	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)

@@ -40,6 +40,8 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
         -routing-key     RABBITMQ_ROUTING_KEY<STRING=es.writer.go1>
         -consumer-name   RABBITMQ_CONSUMER_NAME<STRING=es-writer>
         -queue-name      RABBITMQ_QUEUE_NAME<STRING=es-writer>
+        -url-contains     URL_CONTAINS<STRING>     # example: `award:`
+        -url-not-contains URL_NOT_CONTAINS<STRING> # example: `award:`
         -prefetch-count  RABBITMQ_PREFETCH_COUNT<INT=50>
         -es-url          ELASTIC_SEARCH_URL<STRING=http://127.0.0.1:9200/?sniff=false>
         -refresh         true # Optional. allowed values: true, wait_for. default is true
