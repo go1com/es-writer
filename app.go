@@ -23,27 +23,31 @@ type App struct {
 	buffer *action.Container
 	count  int
 
+	// message filtering
+	urlContains    string
+	urlNotContains string
+
 	// ElasticSearch
 	es      *elastic.Client
 	bulk    *elastic.BulkProcessor
 	refresh string
 }
 
-func (w *App) Start(ctx context.Context, flags Flags, terminate chan os.Signal) {
-	pushHandler := w.push()
+func (app *App) Start(ctx context.Context, flags Flags, terminate chan os.Signal) {
+	pushHandler := app.push()
 
 	terminateRabbit := make(chan bool)
-	go w.rabbit.start(ctx, flags, pushHandler, terminateRabbit)
+	go app.rabbit.start(ctx, flags, pushHandler, terminateRabbit)
 
 	terminateInterval := make(chan bool)
-	go interval(w, ctx, flags, terminateInterval)
+	go interval(app, ctx, flags, terminateInterval)
 
 	<-terminate
 	terminateRabbit <- true
 	terminateInterval <- true
 }
 
-func (w *App) push() PushCallback {
+func (app *App) push() PushCallback {
 	return func(ctx context.Context, body []byte) (error, bool, bool) {
 		buffer := false
 		ack := false
@@ -52,52 +56,66 @@ func (w *App) push() PushCallback {
 			return err, ack, buffer
 		}
 
+		// message filtering: Don't process if not contains expecting text.
+		if "" != app.urlContains {
+			if !strings.Contains(element.Uri, app.urlContains) {
+				return nil, true, false
+			}
+		}
+
+		// message filtering: Don't process if contains unexpecting text.
+		if "" != app.urlNotContains {
+			if strings.Contains(element.Uri, app.urlNotContains) {
+				return nil, true, false
+			}
+		}
+
 		// Not all requests are bulkable
 		requestType := element.RequestType()
 		if "bulkable" != requestType {
-			if w.buffer.Length() > 0 {
-				w.flush(ctx)
+			if app.buffer.Length() > 0 {
+				app.flush(ctx)
 			}
 
-			err = w.handleUnbulkableRequest(ctx, requestType, element)
+			err = app.handleUnbulkableRequest(ctx, requestType, element)
 			ack = err == nil
 
 			return err, ack, buffer
 		}
 
-		w.buffer.Add(element)
+		app.buffer.Add(element)
 
-		if w.buffer.Length() < w.count {
+		if app.buffer.Length() < app.count {
 			buffer = true
 
 			return nil, ack, buffer
 		}
 
 		metricFlushCounter.WithLabelValues("length").Inc()
-		w.flush(ctx)
+		app.flush(ctx)
 
 		return nil, ack, buffer
 	}
 }
 
-func (w *App) handleUnbulkableRequest(ctx context.Context, requestType string, element action.Element) error {
+func (app *App) handleUnbulkableRequest(ctx context.Context, requestType string, element action.Element) error {
 	defer metricActionCounter.WithLabelValues(requestType).Inc()
 
 	switch requestType {
 	case "update_by_query":
-		return hanldeUpdateByQuery(ctx, w.es, element, requestType)
+		return hanldeUpdateByQuery(ctx, app.es, element, requestType)
 
 	case "delete_by_query":
-		return hanldeDeleteByQuery(ctx, w.es, element, requestType)
+		return hanldeDeleteByQuery(ctx, app.es, element, requestType)
 
 	case "indices_create":
-		return hanldeIndicesCreate(ctx, w.es, element)
+		return hanldeIndicesCreate(ctx, app.es, element)
 
 	case "indices_delete":
-		return handleIndicesDelete(ctx, w.es, element)
+		return handleIndicesDelete(ctx, app.es, element)
 
 	case "indices_alias":
-		return handleIndicesAlias(ctx, w.es, element)
+		return handleIndicesAlias(ctx, app.es, element)
 
 	default:
 		metricInvalidCounter.WithLabelValues(requestType).Inc()
@@ -105,20 +123,20 @@ func (w *App) handleUnbulkableRequest(ctx context.Context, requestType string, e
 	}
 }
 
-func (w *App) flush(ctx context.Context) {
+func (app *App) flush(ctx context.Context) {
 	metricActionCounter.WithLabelValues("bulk").Inc()
-	bulk := w.es.Bulk().Refresh(w.refresh)
+	bulk := app.es.Bulk().Refresh(app.refresh)
 
-	for _, element := range w.buffer.Elements() {
+	for _, element := range app.buffer.Elements() {
 		bulk.Add(element)
 	}
 
-	w.doFlush(ctx, bulk)
-	w.buffer.Clear()
-	w.rabbit.onFlush()
+	app.doFlush(ctx, bulk)
+	app.buffer.Clear()
+	app.rabbit.onFlush()
 }
 
-func (w *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
+func (app *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
 	var hasError error
 	var retriableError bool
 
@@ -132,7 +150,7 @@ func (w *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
 		if err != nil {
 			hasError = err
 
-			if w.isErrorRetriable(err) {
+			if app.isErrorRetriable(err) {
 				retriableError = true
 				time.Sleep(retry)
 				continue
@@ -142,7 +160,7 @@ func (w *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
 			}
 		}
 
-		w.verboseResponse(res)
+		app.verboseResponse(res)
 
 		break
 	}
@@ -157,7 +175,7 @@ func (w *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
 	}
 }
 
-func (w *App) isErrorRetriable(err error) bool {
+func (app *App) isErrorRetriable(err error) bool {
 	retriable := false
 
 	if strings.Contains(err.Error(), "no available connection") {
@@ -176,7 +194,7 @@ func (w *App) isErrorRetriable(err error) bool {
 	return retriable
 }
 
-func (w *App) verboseResponse(res *elastic.BulkResponse) {
+func (app *App) verboseResponse(res *elastic.BulkResponse) {
 	for _, rItem := range res.Items {
 		for riKey, riValue := range rItem {
 			if riValue.Error != nil {

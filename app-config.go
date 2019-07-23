@@ -39,6 +39,8 @@ type Flags struct {
 	PrefetchSize  *int
 	TickInterval  *time.Duration
 	QueueName     *string
+	UrlContain    *string
+	UrlNotContain *string
 	ConsumerName  *string
 	EsUrl         *string
 	AdminPort     *string
@@ -80,6 +82,8 @@ func NewFlags() Flags {
 	f.PrefetchSize = flag.Int("prefetch-size", 0, "")
 	f.TickInterval = flag.Duration("tick-iterval", time.Duration(iDuration)*time.Second, "")
 	f.QueueName = flag.String("queue-name", env("RABBITMQ_QUEUE_NAME", "es-writer"), "")
+	f.UrlContain = flag.String("url-contains", env("URL_CONTAINS", ""), "")
+	f.UrlNotContain = flag.String("url-not-contains", env("URL_NOT_CONTAINS", ""), "")
 	f.ConsumerName = flag.String("consumer-name", env("RABBITMQ_CONSUMER_NAME", "es-writter"), "")
 	f.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
 	f.Debug = flag.Bool("debug", false, "Enable with care; credentials can be leaked if this is on.")
@@ -188,9 +192,11 @@ func (f *Flags) Writer() (*App, error, chan bool) {
 			ch:   ch,
 			tags: []uint64{},
 		},
-		buffer:  action.NewContainer(),
-		count:   *f.PrefetchCount,
-		es:      es,
-		refresh: *f.Refresh,
+		buffer:         action.NewContainer(),
+		count:          *f.PrefetchCount,
+		urlContains:    *f.UrlContain,
+		urlNotContains: *f.UrlNotContain,
+		es:             es,
+		refresh:        *f.Refresh,
 	}, nil, stop
 }
