@@ -28,8 +28,9 @@ func main() {
 		logrus.Infof("RabbitMQ consumer name: %s", *f.ConsumerName)
 		logrus.Infof("ElasticSearch URL: %s", *f.EsUrl)
 		logrus.Infof("Tick interval: %s", *f.TickInterval)
+		logrus.Infof("URL must contains: %s", *f.UrlContain)
+		logrus.Infof("URL must not contains: %s", *f.UrlNotContain)
 		logrus.Infoln("====================================")
-
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 

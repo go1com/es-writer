@@ -2,7 +2,6 @@ package es_writer
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
@@ -48,10 +47,6 @@ func (r *RabbitMqInput) start(ctx context.Context, flags Flags, pushHandler Push
 }
 
 func (r *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, pushHandler PushCallback) {
-	if false {
-		fmt.Println("INPUT: ", string(m.Body))
-	}
-
 	if m.DeliveryTag == 0 {
 		r.ch.Nack(m.DeliveryTag, false, false)
 		return
