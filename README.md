@@ -34,18 +34,7 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
 ### Consuming
 
     /path/to/es-writer
-        -url             RABBITMQ_URL<STRING=amqp://go1:go1@127.0.0.1:5672/>
-        -kind            RABBITMQ_KIND<STRING=topic>
-        -exchange        RABBITMQ_EXCHANGE<STRING=events>
-        -routing-key     RABBITMQ_ROUTING_KEY<STRING=es.writer.go1>
-        -consumer-name   RABBITMQ_CONSUMER_NAME<STRING=es-writer>
-        -queue-name      RABBITMQ_QUEUE_NAME<STRING=es-writer>
-        -url-contains     URL_CONTAINS<STRING>     # example: `award:`
-        -url-not-contains URL_NOT_CONTAINS<STRING> # example: `award:`
-        -prefetch-count  RABBITMQ_PREFETCH_COUNT<INT=50>
-        -es-url          ELASTIC_SEARCH_URL<STRING=http://127.0.0.1:9200/?sniff=false>
         -refresh         true # Optional. allowed values: true, wait_for. default is true
-        -admin-port      ADMIN_PORT<STRING=:8001>
 
 ### Notes
 
@@ -60,6 +49,6 @@ Limit these kinds of request because they are not bulkable:
 
 ```
 docker run -d -p 9200:9200                --rm --name es       elasticsearch:5-alpine
-docker run -d -p 5672:5672 -p 15672:15672 --rm --name rabbitmq rabbitmq:3-management
+docker run --rm -p 5672:5672 -p 15672:15672 -e RABBITMQ_DEFAULT_USER='go1' -e RABBITMQ_DEFAULT_PASS='go1' rabbitmq:3-management
 go test -race -v ./...
 ```

@@ -33,14 +33,14 @@ type App struct {
 	refresh string
 }
 
-func (app *App) Start(ctx context.Context, flags Flags, terminate chan os.Signal) {
+func (app *App) Start(ctx context.Context, cnf Configuration, terminate chan os.Signal) {
 	pushHandler := app.push()
 
 	terminateRabbit := make(chan bool)
-	go app.rabbit.start(ctx, flags, pushHandler, terminateRabbit)
+	go app.rabbit.start(ctx, cnf, pushHandler, terminateRabbit)
 
 	terminateInterval := make(chan bool)
-	go interval(app, ctx, flags, terminateInterval)
+	go interval(app, ctx, cnf, terminateInterval)
 
 	<-terminate
 	terminateRabbit <- true

@@ -19,39 +19,22 @@ import (
 	"gopkg.in/olivere/elastic.v5"
 )
 
-func flags() Flags {
-	f := Flags{}
-
-	url := env("RABBITMQ_URL", "amqp://guest:guest@127.0.0.1:5672/")
-	f.Url = &url
-	kind := env("RABBITMQ_KIND", "topic")
-	f.Kind = &kind
-	exchange := env("RABBITMQ_EXCHANGE", "events")
-	f.Exchange = &exchange
-	routingKey := env("RABBITMQ_ROUTING_KEY", "qa")
-	f.RoutingKey = &routingKey
-	prefetchCount := 50
-	f.PrefetchCount = &prefetchCount
-	prefetchSize := 0
-	f.PrefetchSize = &prefetchSize
-	tickInterval := 3 * time.Second
-	f.TickInterval = &tickInterval
-	queueName := "es-writer-qa"
-	f.QueueName = &queueName
-	urlContain := ""
-	f.UrlContain = &urlContain
-	urlNotContain := ""
-	f.UrlNotContain = &urlNotContain
-	ConsumerName := ""
-	f.ConsumerName = &ConsumerName
-	esUrl := env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false")
-	f.EsUrl = &esUrl
-	debug := true
-	f.Debug = &debug
-	refresh := "true"
-	f.Refresh = &refresh
-
-	return f
+func configugration() Configuration {
+	return Configuration{
+		TickInterval: 3 * time.Second,
+		Debug:        true,
+		ElasticSearch: esConfig{
+			Url: env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"),
+		},
+		RabbitMq: rabbitmqConfig{
+			Url:           env("RABBITMQ_URL", "amqp://guest:guest@127.0.0.1:5672/"),
+			Kind:          env("RABBITMQ_KIND", "topic"),
+			Exchange:      env("RABBITMQ_EXCHANGE", "events"),
+			RoutingKey:    env("RABBITMQ_ROUTING_KEY", "qa"),
+			PrefetchCount: 0,
+			QueueName:     "es-writer-qa",
+		},
+	}
 }
 
 func idle(w *App) {
@@ -70,8 +53,8 @@ func idle(w *App) {
 	}
 }
 
-func queue(ch *amqp.Channel, f Flags, file string) {
-	err := ch.Publish(*f.Exchange, *f.RoutingKey, false, false, amqp.Publishing{
+func queue(ch *amqp.Channel, c Configuration, file string) {
+	err := ch.Publish(c.RabbitMq.Exchange, c.RabbitMq.RoutingKey, false, false, amqp.Publishing{
 		Body: fixture(file),
 	})
 
@@ -89,7 +72,7 @@ func fixture(filePath string) []byte {
 }
 
 func TestFlags(t *testing.T) {
-	f := flags()
+	f := configugration()
 	con, _ := f.queueConnection()
 	defer con.Close()
 	ch, _ := f.queueChannel(con)
@@ -100,15 +83,15 @@ func TestFlags(t *testing.T) {
 
 func TestIndicesCreate(t *testing.T) {
 	ctx := context.Background()
-	f := flags()
-	writer, _, stop := f.App()
+	c := configugration()
+	writer, _, stop := c.App()
 	defer func() { stop <- true }()
-	defer writer.rabbit.ch.QueuePurge(*f.QueueName, false)
+	defer writer.rabbit.ch.QueuePurge(c.RabbitMq.QueueName, false)
 	defer elastic.NewIndicesDeleteService(writer.es).Index([]string{"go1_qa"}).Do(ctx)
-	go writer.Start(ctx, f, make(chan os.Signal))
+	go writer.Start(ctx, c, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
 
-	queue(writer.rabbit.ch, f, "indices/indices-create.json") // queue a message to rabbitMQ
+	queue(writer.rabbit.ch, c, "indices/indices-create.json") // queue a message to rabbitMQ
 	idle(writer)                                              // Wait a bit so that the message can be consumed.
 
 	res, err := elastic.NewIndicesGetService(writer.es).Index("go1_qa").Do(ctx)
@@ -127,10 +110,10 @@ func TestIndicesCreate(t *testing.T) {
 
 func TestIndicesDelete(t *testing.T) {
 	ctx := context.Background()
-	f := flags()
+	f := configugration()
 	dog, _, stop := f.App()
 	defer func() { stop <- true }()
-	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(f.RabbitMq.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
@@ -147,10 +130,10 @@ func TestIndicesDelete(t *testing.T) {
 
 func TestBulkCreate(t *testing.T) {
 	ctx := context.Background()
-	f := flags()
+	f := configugration()
 	dog, _, stop := f.App()
 	defer func() { stop <- true }()
-	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(f.RabbitMq.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
@@ -178,10 +161,10 @@ func TestBulkCreate(t *testing.T) {
 
 func TestBulkableUpdate(t *testing.T) {
 	ctx := context.Background()
-	f := flags()
+	f := configugration()
 	dog, _, stop := f.App()
 	defer func() { stop <- true }()
-	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(f.RabbitMq.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
@@ -213,10 +196,10 @@ func TestBulkableUpdate(t *testing.T) {
 
 func TestGracefulUpdate(t *testing.T) {
 	ctx := context.Background()
-	f := flags()
+	f := configugration()
 	dog, _, stop := f.App()
 	defer func() { stop <- true }()
-	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(f.RabbitMq.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
@@ -246,10 +229,10 @@ func TestGracefulUpdate(t *testing.T) {
 
 func TestBulkUpdateConflict(t *testing.T) {
 	ctx := context.Background()
-	f := flags()
+	f := configugration()
 	dog, _, stop := f.App()
 	defer func() { stop <- true }()
-	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(f.RabbitMq.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
@@ -283,7 +266,7 @@ func TestBulkUpdateConflict(t *testing.T) {
 	for i := 1; i <= 5; i++ {
 		fmt.Println("Round ", i)
 
-		for count := 1; count <= *f.PrefetchCount; count++ {
+		for count := 1; count <= f.RabbitMq.PrefetchCount; count++ {
 			fixture := fixtures[r.Intn(len(fixtures))]
 			queue(dog.rabbit.ch, f, fixture) // portal.status = 0
 		}
@@ -299,10 +282,10 @@ func TestBulkUpdateConflict(t *testing.T) {
 
 func TestBulkableDelete(t *testing.T) {
 	ctx := context.Background()
-	f := flags()
+	f := configugration()
 	dog, _, stop := f.App()
 	defer func() { stop <- true }()
-	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(f.RabbitMq.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
@@ -328,10 +311,10 @@ func TestBulkableDelete(t *testing.T) {
 
 func TestUpdateByQuery(t *testing.T) {
 	ctx := context.Background()
-	f := flags()
+	f := configugration()
 	dog, _, stop := f.App()
 	defer func() { stop <- true }()
-	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(f.RabbitMq.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
@@ -366,10 +349,10 @@ func TestUpdateByQuery(t *testing.T) {
 
 func TestDeleteByQuery(t *testing.T) {
 	ctx := context.Background()
-	f := flags()
+	f := configugration()
 	dog, _, stop := f.App()
 	defer func() { stop <- true }()
-	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(f.RabbitMq.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)
@@ -395,10 +378,10 @@ func TestDeleteByQuery(t *testing.T) {
 
 func TestCreateIndexAlias(t *testing.T) {
 	ctx := context.Background()
-	f := flags()
+	f := configugration()
 	dog, _, stop := f.App()
 	defer func() { stop <- true }()
-	defer dog.rabbit.ch.QueuePurge(*f.QueueName, false)
+	defer dog.rabbit.ch.QueuePurge(f.RabbitMq.QueueName, false)
 	defer elastic.NewIndicesDeleteService(dog.es).Index([]string{"go1_qa"}).Do(ctx)
 	go dog.Start(ctx, f, make(chan os.Signal))
 	time.Sleep(3 * time.Second)

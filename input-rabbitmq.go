@@ -12,18 +12,18 @@ type RabbitMqInput struct {
 	tags []uint64
 }
 
-func (r *RabbitMqInput) messages(flags Flags) <-chan amqp.Delivery {
-	queue, err := r.ch.QueueDeclare(*flags.QueueName, false, false, false, false, nil, )
+func (r *RabbitMqInput) messages(cnf Configuration) <-chan amqp.Delivery {
+	queue, err := r.ch.QueueDeclare(cnf.RabbitMq.QueueName, false, false, false, false, nil, )
 	if nil != err {
 		logrus.Panic(err)
 	}
 
-	err = r.ch.QueueBind(queue.Name, *flags.RoutingKey, *flags.Exchange, true, nil)
+	err = r.ch.QueueBind(queue.Name, cnf.RabbitMq.RoutingKey, cnf.RabbitMq.Exchange, true, nil)
 	if nil != err {
 		logrus.Panic(err)
 	}
 
-	messages, err := r.ch.Consume(queue.Name, *flags.ConsumerName, false, false, false, true, nil)
+	messages, err := r.ch.Consume(queue.Name, cnf.RabbitMq.ConsumerName, false, false, false, true, nil)
 	if nil != err {
 		logrus.Panic(err)
 	}
@@ -31,8 +31,8 @@ func (r *RabbitMqInput) messages(flags Flags) <-chan amqp.Delivery {
 	return messages
 }
 
-func (r *RabbitMqInput) start(ctx context.Context, flags Flags, pushHandler PushCallback, terminate chan bool) {
-	messages := r.messages(flags)
+func (r *RabbitMqInput) start(ctx context.Context, cnf Configuration, pushHandler PushCallback, terminate chan bool) {
+	messages := r.messages(cnf)
 	for {
 		select {
 		case <-terminate:

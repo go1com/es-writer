@@ -1,0 +1,20 @@
+debug: true
+adminPort: ${ADMIN_PORT:":81"}
+tickInterval: 3
+
+elasticSearch:
+  url: ${ELASTIC_SEARCH_URL:http://127.0.0.1:9200/?sniff=false}
+  refresh: "true" # true (default), wait_for
+
+rabbitmq:
+  url:          ${RABBITMQ_URL:amqp://go1:go1@127.0.0.1:5672/}
+  kind:         ${RABBITMQ_KIND:topic}
+  exchange:     ${RABBITMQ_EXCHANGE:events}
+  consumerName: ${RABBITMQ_CONSUMER_NAME:es-writer}
+  routingKey:   ${RABBITMQ_ROUTING_KEY:es-writer}
+  queueName:    ${RABBITMQ_QUEUE_NAME:es-writer}
+  prefetchCount: ${RABBITMQ_PREFETCH_COUNT:500}
+
+filter:
+  urlContains: "award"
+  urlNotContains: "enrolment_revision"

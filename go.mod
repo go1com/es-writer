@@ -8,4 +8,5 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/streadway/amqp v0.0.0-20190404075320-75d898a42a94
 	gopkg.in/olivere/elastic.v5 v5.0.81
+	gopkg.in/yaml.v2 v2.2.2
 )

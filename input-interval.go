@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-func interval(w *App, ctx context.Context, flags Flags, terminate chan bool) {
-	ticker := time.NewTicker(*flags.TickInterval)
+func interval(w *App, ctx context.Context, cnf Configuration, terminate chan bool) {
+	ticker := time.NewTicker(cnf.TickInterval)
 
 	for {
 		select {
