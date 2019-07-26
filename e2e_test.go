@@ -19,8 +19,8 @@ import (
 	"gopkg.in/olivere/elastic.v5"
 )
 
-func configugration() Configuration {
-	return Configuration{
+func configugration() *Configuration {
+	return &Configuration{
 		TickInterval: 3 * time.Second,
 		Debug:        true,
 		ElasticSearch: esConfig{
@@ -53,7 +53,7 @@ func idle(w *App) {
 	}
 }
 
-func queue(ch *amqp.Channel, c Configuration, file string) {
+func queue(ch *amqp.Channel, c *Configuration, file string) {
 	err := ch.Publish(c.RabbitMq.Exchange, c.RabbitMq.RoutingKey, false, false, amqp.Publishing{
 		Body: fixture(file),
 	})
