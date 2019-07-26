@@ -2,6 +2,7 @@ package es_writer
 
 import (
 	"context"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
@@ -32,16 +33,21 @@ func (r *RabbitMqInput) messages(cnf *Configuration) <-chan amqp.Delivery {
 }
 
 func (r *RabbitMqInput) start(ctx context.Context, cnf *Configuration, pushHandler PushCallback, terminate chan bool) {
+	wg := sync.WaitGroup{}
 	messages := r.messages(cnf)
+
 	for {
 		select {
 		case <-terminate:
+			wg.Wait() // don't terminate until data flushing is completed
 			return
 
 		case m := <-messages:
+			wg.Add(1)
 			bufferMutext.Lock()
 			r.onMessage(ctx, m, pushHandler)
 			bufferMutext.Unlock()
+			wg.Done()
 		}
 	}
 }
