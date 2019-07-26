@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go1com/es-writer/action"
@@ -33,11 +34,12 @@ type App struct {
 	refresh string
 }
 
-func (app *App) Start(ctx context.Context, cnf *Configuration, terminate chan os.Signal) {
+func (app *App) Start(ctx context.Context, cnf *Configuration, terminate chan os.Signal, booting *sync.WaitGroup) {
 	pushHandler := app.push()
 
 	terminateRabbit := make(chan bool)
-	go app.rabbit.start(ctx, cnf, pushHandler, terminateRabbit)
+	booting.Add(1)
+	go app.rabbit.start(ctx, cnf, pushHandler, terminateRabbit, booting)
 
 	terminateInterval := make(chan bool)
 	go interval(app, ctx, cnf, terminateInterval)

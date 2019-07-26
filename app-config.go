@@ -97,12 +97,6 @@ func NewConfigurationFromYamlBytes(yamlRaw []byte) (*Configuration, error) {
 	return cnf, nil
 }
 
-func NewConfiguration() *Configuration {
-	c := &Configuration{}
-
-	return c
-}
-
 func (cnf *Configuration) queueConnection() (*amqp.Connection, error) {
 	con, err := amqp.Dial(cnf.RabbitMq.Url)
 

@@ -89,7 +89,7 @@ func hanldeIndicesCreate(ctx context.Context, client *elastic.Client, element ac
 	_, err = service.Do(ctx)
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			logrus.WithError(err).Errorln("That's ok if the index is existing.")
+			logrus.WithError(err).Infoln("That's ok if the index is existing.")
 			return nil
 		}
 	}
@@ -118,7 +118,7 @@ func handleIndicesAlias(ctx context.Context, client *elastic.Client, element act
 	res, err := action.CreateIndiceAlias(ctx, client, element)
 	if err != nil {
 		if strings.Contains(err.Error(), "index_not_found_exception") {
-			logrus.WithError(err).Errorln("That's ok if the index is existing.")
+			logrus.WithError(err).Infoln("That's ok if the index is existing.")
 			return nil
 		}
 	}

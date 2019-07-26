@@ -32,9 +32,10 @@ func (r *RabbitMqInput) messages(cnf *Configuration) <-chan amqp.Delivery {
 	return messages
 }
 
-func (r *RabbitMqInput) start(ctx context.Context, cnf *Configuration, pushHandler PushCallback, terminate chan bool) {
+func (r *RabbitMqInput) start(ctx context.Context, cnf *Configuration, pushHandler PushCallback, terminate chan bool, booting *sync.WaitGroup) {
 	wg := sync.WaitGroup{}
 	messages := r.messages(cnf)
+	booting.Done()
 
 	for {
 		select {

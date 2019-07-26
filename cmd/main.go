@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/sirupsen/logrus"
@@ -33,10 +34,12 @@ func main() {
 
 	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, os.Interrupt, syscall.SIGTERM)
+	booting := &sync.WaitGroup{}
 
 	go es_writer.StartPrometheusServer(cnf.AdminPort)
 	ctx := context.Background()
-	app.Start(ctx, cnf, terminate)
+	booting.Add(1)
+	app.Start(ctx, cnf, terminate, booting)
 
 	os.Exit(1)
 }
