@@ -33,7 +33,7 @@ type App struct {
 	refresh string
 }
 
-func (app *App) Start(ctx context.Context, cnf Configuration, terminate chan os.Signal) {
+func (app *App) Start(ctx context.Context, cnf *Configuration, terminate chan os.Signal) {
 	pushHandler := app.push()
 
 	terminateRabbit := make(chan bool)

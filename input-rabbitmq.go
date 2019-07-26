@@ -12,7 +12,7 @@ type RabbitMqInput struct {
 	tags []uint64
 }
 
-func (r *RabbitMqInput) messages(cnf Configuration) <-chan amqp.Delivery {
+func (r *RabbitMqInput) messages(cnf *Configuration) <-chan amqp.Delivery {
 	queue, err := r.ch.QueueDeclare(cnf.RabbitMq.QueueName, false, false, false, false, nil, )
 	if nil != err {
 		logrus.Panic(err)
@@ -31,7 +31,7 @@ func (r *RabbitMqInput) messages(cnf Configuration) <-chan amqp.Delivery {
 	return messages
 }
 
-func (r *RabbitMqInput) start(ctx context.Context, cnf Configuration, pushHandler PushCallback, terminate chan bool) {
+func (r *RabbitMqInput) start(ctx context.Context, cnf *Configuration, pushHandler PushCallback, terminate chan bool) {
 	messages := r.messages(cnf)
 	for {
 		select {

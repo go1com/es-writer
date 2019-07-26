@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func interval(w *App, ctx context.Context, cnf Configuration, terminate chan bool) {
+func interval(w *App, ctx context.Context, cnf *Configuration, terminate chan bool) {
 	ticker := time.NewTicker(cnf.TickInterval)
 
 	for {
