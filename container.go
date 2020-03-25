@@ -81,25 +81,34 @@ func NewContainer() Container {
 		logrus.WithError(err).Panicln("prefetch-count is invalid.")
 	}
 
-	f := Container{}
-	f.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
-	f.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
-	f.Exchange = flag.String("exchange", env("RABBITMQ_EXCHANGE", "events"), "")
-	f.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "es.writer.go1"), "")
-	f.PrefetchCount = flag.Int("prefetch-count", iPrefetchCount, "")
-	f.PrefetchSize = flag.Int("prefetch-size", 0, "")
-	f.TickInterval = flag.Duration("tick-iterval", time.Duration(iDuration)*time.Second, "")
-	f.QueueName = flag.String("queue-name", env("RABBITMQ_QUEUE_NAME", "es-writer"), "")
-	f.UrlContain = flag.String("url-contains", env("URL_CONTAINS", ""), "")
-	f.UrlNotContain = flag.String("url-not-contains", env("URL_NOT_CONTAINS", ""), "")
-	f.ConsumerName = flag.String("consumer-name", env("RABBITMQ_CONSUMER_NAME", "es-writter"), "")
-	f.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
-	f.Debug = flag.Bool("debug", false, "Enable with care; credentials can be leaked if this is on.")
-	f.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
-	f.Refresh = flag.String("refresh", env("ES_REFRESH", "true"), "")
+	ctn := Container{}
+	ctn.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
+	ctn.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
+	ctn.Exchange = flag.String("exchange", env("RABBITMQ_EXCHANGE", "events"), "")
+	ctn.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "es.writer.go1"), "")
+	ctn.PrefetchCount = flag.Int("prefetch-count", iPrefetchCount, "")
+	ctn.PrefetchSize = flag.Int("prefetch-size", 0, "")
+	ctn.TickInterval = flag.Duration("tick-iterval", time.Duration(iDuration)*time.Second, "")
+	ctn.QueueName = flag.String("queue-name", env("RABBITMQ_QUEUE_NAME", "es-writer"), "")
+	ctn.UrlContain = flag.String("url-contains", env("URL_CONTAINS", ""), "")
+	ctn.UrlNotContain = flag.String("url-not-contains", env("URL_NOT_CONTAINS", ""), "")
+	ctn.ConsumerName = flag.String("consumer-name", env("RABBITMQ_CONSUMER_NAME", "es-writter"), "")
+	ctn.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
+	ctn.Debug = flag.Bool("debug", false, "Enable with care; credentials can be leaked if this is on.")
+	ctn.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
+	ctn.Refresh = flag.String("refresh", env("ES_REFRESH", "true"), "")
 	flag.Parse()
 
-	return f
+	if host := env("DD_AGENT_HOST", ""); host != "" {
+		ctn.DataDog = DataDogConfig{
+			Host:        host,
+			Port:        env("DD_AGENT_PORT", "8126"),
+			ServiceName: "es-writer",
+			Env:         env("ENVIRONMENT", "dev"),
+		}
+	}
+
+	return ctn
 }
 
 func (this *Container) queueConnection() (*amqp.Connection, error) {
