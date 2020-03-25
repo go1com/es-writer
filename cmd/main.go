@@ -61,5 +61,6 @@ func main() {
 
 	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, os.Interrupt, syscall.SIGTERM)
+	<-terminate
 	os.Exit(1)
 }
