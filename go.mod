@@ -1,6 +1,6 @@
 module github.com/go1com/es-writer
 
-go 1.12
+go 1.14
 
 require (
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
