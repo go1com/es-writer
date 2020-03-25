@@ -30,7 +30,7 @@ var (
 	}
 )
 
-type Flags struct {
+type Container struct {
 	Url           *string
 	Kind          *string
 	Exchange      *string
@@ -46,6 +46,14 @@ type Flags struct {
 	AdminPort     *string
 	Debug         *bool
 	Refresh       *string
+	DataDog       DataDogConfig
+}
+
+type DataDogConfig struct {
+	Host        string
+	Port        string
+	ServiceName string
+	Env         string
 }
 
 func env(key string, defaultValue string) string {
@@ -58,7 +66,7 @@ func env(key string, defaultValue string) string {
 	return value
 }
 
-func NewFlags() Flags {
+func NewContainer() Container {
 	var (
 		duration       = env("DURATION", "5")
 		iDuration, err = strconv.ParseInt(duration, 10, 64)
@@ -73,7 +81,7 @@ func NewFlags() Flags {
 		logrus.WithError(err).Panicln("prefetch-count is invalid.")
 	}
 
-	f := Flags{}
+	f := Container{}
 	f.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
 	f.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
 	f.Exchange = flag.String("exchange", env("RABBITMQ_EXCHANGE", "events"), "")
@@ -94,8 +102,8 @@ func NewFlags() Flags {
 	return f
 }
 
-func (f *Flags) queueConnection() (*amqp.Connection, error) {
-	url := *f.Url
+func (this *Container) queueConnection() (*amqp.Connection, error) {
+	url := *this.Url
 	con, err := amqp.Dial(url)
 
 	if nil != err {
@@ -117,26 +125,26 @@ func (f *Flags) queueConnection() (*amqp.Connection, error) {
 	return con, nil
 }
 
-func (f *Flags) queueChannel(con *amqp.Connection) (*amqp.Channel, error) {
+func (this *Container) queueChannel(con *amqp.Connection) (*amqp.Channel, error) {
 	ch, err := con.Channel()
 	if nil != err {
 		return nil, err
 	}
 
-	if "topic" != *f.Kind && "direct" != *f.Kind {
+	if "topic" != *this.Kind && "direct" != *this.Kind {
 		ch.Close()
 
-		return nil, fmt.Errorf("unsupported channel kind: %s", *f.Kind)
+		return nil, fmt.Errorf("unsupported channel kind: %s", *this.Kind)
 	}
 
-	err = ch.ExchangeDeclare(*f.Exchange, *f.Kind, false, false, false, false, nil)
+	err = ch.ExchangeDeclare(*this.Exchange, *this.Kind, false, false, false, false, nil)
 	if nil != err {
 		ch.Close()
 
 		return nil, err
 	}
 
-	err = ch.Qos(*f.PrefetchCount, *f.PrefetchSize, false)
+	err = ch.Qos(*this.PrefetchCount, *this.PrefetchSize, false)
 	if nil != err {
 		ch.Close()
 
@@ -146,8 +154,8 @@ func (f *Flags) queueChannel(con *amqp.Connection) (*amqp.Channel, error) {
 	return ch, nil
 }
 
-func (f *Flags) elasticSearchClient() (*elastic.Client, error) {
-	cfg, err := config.Parse(*f.EsUrl)
+func (this *Container) elasticSearchClient() (*elastic.Client, error) {
+	cfg, err := config.Parse(*this.EsUrl)
 	if err != nil {
 		logrus.Fatalf("failed to parse URL: %s", err.Error())
 
@@ -162,18 +170,18 @@ func (f *Flags) elasticSearchClient() (*elastic.Client, error) {
 	return client, nil
 }
 
-func (f *Flags) App() (*App, error, chan bool) {
-	con, err := f.queueConnection()
+func (this *Container) App() (*App, error, chan bool) {
+	con, err := this.queueConnection()
 	if err != nil {
 		return nil, err, nil
 	}
 
-	ch, err := f.queueChannel(con)
+	ch, err := this.queueChannel(con)
 	if err != nil {
 		return nil, err, nil
 	}
 
-	es, err := f.elasticSearchClient()
+	es, err := this.elasticSearchClient()
 	if err != nil {
 		return nil, err, nil
 	}
@@ -187,16 +195,16 @@ func (f *Flags) App() (*App, error, chan bool) {
 	}()
 
 	return &App{
-		debug: *f.Debug,
+		debug: *this.Debug,
 		rabbit: &RabbitMqInput{
 			ch:   ch,
 			tags: []uint64{},
 		},
 		buffer:         action.NewContainer(),
-		count:          *f.PrefetchCount,
-		urlContains:    *f.UrlContain,
-		urlNotContains: *f.UrlNotContain,
+		count:          *this.PrefetchCount,
+		urlContains:    *this.UrlContain,
+		urlNotContains: *this.UrlNotContain,
 		es:             es,
-		refresh:        *f.Refresh,
+		refresh:        *this.Refresh,
 	}, nil, stop
 }

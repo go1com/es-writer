@@ -14,32 +14,21 @@ import (
 func hanldeUpdateByQuery(ctx context.Context, client *elastic.Client, element action.Element, requestType string) error {
 	service, err := element.UpdateByQueryService(client)
 	if err != nil {
-		metricFailureCounter.WithLabelValues(requestType).Inc()
 		return err
 	}
 
 	conflictRetryIntervals := []time.Duration{1 * time.Second, 2 * time.Second, 3 * time.Second, 7 * time.Second, 0}
 	for _, conflictRetryInterval := range conflictRetryIntervals {
-		start := time.Now()
 		_, err = service.Do(ctx)
-		metricDurationHistogram.
-			WithLabelValues(requestType).
-			Observe(time.Since(start).Seconds())
 
 		if err == nil {
 			break
 		}
 
 		if strings.Contains(err.Error(), "Error 409 (Conflict)") {
-			metricFailureCounter.WithLabelValues(requestType).Inc()
 			logrus.WithError(err).Errorf("writing has conflict; try again in %s.\n", conflictRetryInterval)
 			time.Sleep(conflictRetryInterval)
 		}
-		metricRetryCounter.WithLabelValues(requestType).Inc()
-	}
-
-	if err != nil {
-		metricFailureCounter.WithLabelValues(requestType).Inc()
 	}
 
 	return err
@@ -48,39 +37,27 @@ func hanldeUpdateByQuery(ctx context.Context, client *elastic.Client, element ac
 func hanldeDeleteByQuery(ctx context.Context, client *elastic.Client, element action.Element, requestType string) error {
 	service, err := element.DeleteByQueryService(client)
 	if err != nil {
-		metricFailureCounter.WithLabelValues(requestType).Inc()
 		return err
 	}
 
 	conflictRetryIntervals := []time.Duration{1 * time.Second, 2 * time.Second, 3 * time.Second, 7 * time.Second, 0}
 	for _, conflictRetryInterval := range conflictRetryIntervals {
-		start := time.Now()
 		_, err = service.Do(ctx)
-		metricDurationHistogram.
-			WithLabelValues(requestType).
-			Observe(time.Since(start).Seconds())
 
 		if err == nil {
 			break
 		}
 
 		if strings.Contains(err.Error(), "Error 409 (Conflict)") {
-			metricFailureCounter.WithLabelValues(requestType).Inc()
 			logrus.WithError(err).Errorf("deleting has conflict; try again in %s.\n", conflictRetryInterval)
 			time.Sleep(conflictRetryInterval)
 		}
-
-		metricRetryCounter.WithLabelValues(requestType).Inc()
-	}
-
-	if err != nil {
-		metricFailureCounter.WithLabelValues(requestType).Inc()
 	}
 
 	return err
 }
 
-func hanldeIndicesCreate(ctx context.Context, client *elastic.Client, element action.Element) error {
+func handleIndicesCreate(ctx context.Context, client *elastic.Client, element action.Element) error {
 	service, err := element.IndicesCreateService(client)
 	if err != nil {
 		return err
