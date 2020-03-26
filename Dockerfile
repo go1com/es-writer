@@ -4,7 +4,6 @@ WORKDIR /go/src/github.com/go1com/es-writer/
 COPY    . /go/src/github.com/go1com/es-writer/
 
 RUN apk add --no-cache git
-RUN GO111MODULE=on go mod vendor
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app /go/src/github.com/go1com/es-writer/cmd/main.go
 
 FROM alpine:3.11

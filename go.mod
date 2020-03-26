@@ -9,6 +9,7 @@ require (
 	github.com/prometheus/client_golang v1.0.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/streadway/amqp v0.0.0-20190404075320-75d898a42a94
+	github.com/stretchr/testify v1.3.0
 	github.com/tinylib/msgp v1.1.2 // indirect
 	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect

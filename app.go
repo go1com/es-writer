@@ -35,10 +35,10 @@ type App struct {
 }
 
 func (this *App) Run(ctx context.Context, container Container) {
-	pushHandler := this.push()
+	handler := this.push()
 
 	eg := errgroup.Group{}
-	eg.Go(func() error { return this.rabbit.start(ctx, container, pushHandler) })
+	eg.Go(func() error { return this.rabbit.start(ctx, container, handler) })
 	eg.Go(func() error { return this.loop(ctx, container) })
 	err := eg.Wait()
 	if nil != err {

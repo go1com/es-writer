@@ -14,18 +14,18 @@ type RabbitMqInput struct {
 	tags []uint64
 }
 
-func (r *RabbitMqInput) messages(flags Container) <-chan amqp.Delivery {
-	queue, err := r.ch.QueueDeclare(*flags.QueueName, false, false, false, false, nil, )
+func (this *RabbitMqInput) messages(flags Container) <-chan amqp.Delivery {
+	queue, err := this.ch.QueueDeclare(*flags.QueueName, false, false, false, false, nil, )
 	if nil != err {
 		logrus.Panic(err)
 	}
 
-	err = r.ch.QueueBind(queue.Name, *flags.RoutingKey, *flags.Exchange, true, nil)
+	err = this.ch.QueueBind(queue.Name, *flags.RoutingKey, *flags.Exchange, true, nil)
 	if nil != err {
 		logrus.Panic(err)
 	}
 
-	messages, err := r.ch.Consume(queue.Name, *flags.ConsumerName, false, false, false, true, nil)
+	messages, err := this.ch.Consume(queue.Name, *flags.ConsumerName, false, false, false, true, nil)
 	if nil != err {
 		logrus.Panic(err)
 	}
@@ -33,24 +33,24 @@ func (r *RabbitMqInput) messages(flags Container) <-chan amqp.Delivery {
 	return messages
 }
 
-func (r *RabbitMqInput) start(ctx context.Context, flags Container, handler PushCallback) error {
-	messages := r.messages(flags)
+func (this *RabbitMqInput) start(ctx context.Context, flags Container, handler PushCallback) error {
+	messages := this.messages(flags)
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 
-		case m := <-messages:
+		case message := <-messages:
 			bufferMutext.Lock()
-			r.onMessage(ctx, m, handler)
+			this.onMessage(ctx, message, handler)
 			bufferMutext.Unlock()
 		}
 	}
 }
 
-func (r *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handler PushCallback) {
+func (this *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handler PushCallback) {
 	if m.DeliveryTag == 0 {
-		r.ch.Nack(m.DeliveryTag, false, false)
+		this.ch.Nack(m.DeliveryTag, false, false)
 		return
 	}
 
@@ -75,18 +75,18 @@ func (r *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handler 
 	}
 
 	if ack {
-		r.ch.Ack(m.DeliveryTag, false)
+		this.ch.Ack(m.DeliveryTag, false)
 	}
 
 	if buffer {
-		r.tags = append(r.tags, m.DeliveryTag)
+		this.tags = append(this.tags, m.DeliveryTag)
 	}
 }
 
-func (r *RabbitMqInput) onFlush() {
-	for _, deliveryTag := range r.tags {
-		r.ch.Ack(deliveryTag, true)
+func (this *RabbitMqInput) onFlush() {
+	for _, deliveryTag := range this.tags {
+		this.ch.Ack(deliveryTag, true)
 	}
 
-	r.tags = r.tags[:0]
+	this.tags = this.tags[:0]
 }
