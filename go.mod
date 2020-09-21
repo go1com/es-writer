@@ -6,8 +6,8 @@ require (
 	github.com/DataDog/datadog-go v3.5.0+incompatible // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 	github.com/philhofer/fwd v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.0.0
-	github.com/sirupsen/logrus v1.4.2
+	github.com/prometheus/client_golang v1.0.0 // indirect
+	github.com/sirupsen/logrus v1.6.0
 	github.com/streadway/amqp v0.0.0-20190404075320-75d898a42a94
 	github.com/stretchr/testify v1.3.0
 	github.com/tinylib/msgp v1.1.2 // indirect

@@ -50,6 +50,7 @@ func container() Container {
 	ctn.EsUrl = &esUrl
 	ctn.Debug = &debug
 	ctn.Refresh = &refresh
+	ctn.Logger = logrus.StandardLogger()
 
 	return ctn
 }
