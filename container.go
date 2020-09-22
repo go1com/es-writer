@@ -47,6 +47,8 @@ type Container struct {
 	Debug         *bool
 	Refresh       *string
 	DataDog       DataDogConfig
+	Logger        *logrus.Logger
+	Stop          chan bool
 }
 
 type DataDogConfig struct {
@@ -97,6 +99,7 @@ func NewContainer() Container {
 	ctn.Debug = flag.Bool("debug", false, "Enable with care; credentials can be leaked if this is on.")
 	ctn.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
 	ctn.Refresh = flag.String("refresh", env("ES_REFRESH", "true"), "")
+	ctn.Logger = logrus.StandardLogger()
 	flag.Parse()
 
 	if host := env("DD_AGENT_HOST", ""); host != "" {
@@ -160,6 +163,25 @@ func (this *Container) queueChannel(con *amqp.Connection) (*amqp.Channel, error)
 		return nil, err
 	}
 
+	// Exit when channel closed.
+	// @see https://www.rabbitmq.com/channels.html#error-handling
+	// @see https://godoc.org/github.com/streadway/amqp#Channel.NotifyClose
+	// This will be triggered when the queue is deleted manually on RabbitMQ Management UI.
+	go func() {
+		chCloseChan := ch.NotifyClose(make(chan *amqp.Error))
+
+		select
+		{
+		case err := <-chCloseChan:
+			if err != nil {
+				this.Logger.WithError(err).Errorln("RabbitMQ channel error.")
+			} else {
+				this.Logger.Errorln("RabbitMQ channel has been closed.")
+			}
+			this.Stop <- true
+		}
+	}()
+
 	return ch, nil
 }
 
@@ -195,12 +217,13 @@ func (this *Container) App() (*App, error, chan bool) {
 		return nil, err, nil
 	}
 
-	stop := make(chan bool)
+	this.Stop = make(chan bool)
 
 	go func() {
-		<-stop
+		<-this.Stop
 		ch.Close()
 		con.Close()
+		os.Exit(1)
 	}()
 
 	return &App{
@@ -215,5 +238,5 @@ func (this *Container) App() (*App, error, chan bool) {
 		urlNotContains: *this.UrlNotContain,
 		es:             es,
 		refresh:        *this.Refresh,
-	}, nil, stop
+	}, nil, this.Stop
 }
