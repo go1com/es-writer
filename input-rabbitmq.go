@@ -15,7 +15,13 @@ type RabbitMqInput struct {
 }
 
 func (this *RabbitMqInput) messages(flags Container) <-chan amqp.Delivery {
-	queue, err := this.ch.QueueDeclare(*flags.QueueName, false, false, false, false, nil, )
+	args := amqp.Table{}
+	if *flags.SingleActiveConsumer {
+		// @see https://www.rabbitmq.com/consumers.html#single-active-consumer
+		args["x-single-active-consumer"] = true
+	}
+
+	queue, err := this.ch.QueueDeclare(*flags.QueueName, false, false, false, false, args)
 	if nil != err {
 		logrus.Panic(err)
 	}
