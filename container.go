@@ -31,24 +31,25 @@ var (
 )
 
 type Container struct {
-	Url           *string
-	Kind          *string
-	Exchange      *string
-	RoutingKey    *string
-	PrefetchCount *int
-	PrefetchSize  *int
-	TickInterval  *time.Duration
-	QueueName     *string
-	UrlContain    *string
-	UrlNotContain *string
-	ConsumerName  *string
-	EsUrl         *string
-	AdminPort     *string
-	Debug         *bool
-	Refresh       *string
-	DataDog       DataDogConfig
-	Logger        *logrus.Logger
-	Stop          chan bool
+	Url                  *string
+	Kind                 *string
+	Exchange             *string
+	RoutingKey           *string
+	PrefetchCount        *int
+	PrefetchSize         *int
+	TickInterval         *time.Duration
+	QueueName            *string
+	UrlContain           *string
+	UrlNotContain        *string
+	ConsumerName         *string
+	EsUrl                *string
+	AdminPort            *string
+	Debug                *bool
+	Refresh              *string
+	DataDog              DataDogConfig
+	Logger               *logrus.Logger
+	Stop                 chan bool
+	SingleActiveConsumer *bool
 }
 
 type DataDogConfig struct {
@@ -83,6 +84,11 @@ func NewContainer() Container {
 		logrus.WithError(err).Panicln("prefetch-count is invalid.")
 	}
 
+	singleActiveConsumer, err := strconv.ParseBool(env("SINGLE_ACTIVE_CONSUMER", "false"))
+	if err != nil {
+		logrus.WithError(err).Panicln("single-active-consumer is invalid.")
+	}
+
 	ctn := Container{}
 	ctn.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
 	ctn.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
@@ -99,6 +105,7 @@ func NewContainer() Container {
 	ctn.Debug = flag.Bool("debug", false, "Enable with care; credentials can be leaked if this is on.")
 	ctn.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
 	ctn.Refresh = flag.String("refresh", env("ES_REFRESH", "true"), "")
+	ctn.SingleActiveConsumer = flag.Bool("single-active-consumer", singleActiveConsumer, "")
 	ctn.Logger = logrus.StandardLogger()
 	flag.Parse()
 
