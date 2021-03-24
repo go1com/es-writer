@@ -46,7 +46,7 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
         -es-url          ELASTIC_SEARCH_URL<STRING=http://127.0.0.1:9200/?sniff=false>
         -refresh         true # Optional. allowed values: true, wait_for. default is true
         -admin-port      ADMIN_PORT<STRING=:8001>
-        -single-active-consumer SINGLE_ACTIVE_CONSUMER<BOOL=true>. default is false
+        -single-active-consumer SINGLE_ACTIVE_CONSUMER<BOOL=true>. default is false. @see https://www.rabbitmq.com/consumers.html#single-active-consumer
 
 ### Notes
 
