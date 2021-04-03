@@ -172,7 +172,9 @@ func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
 		if err != nil {
 			hasError = err
 
-			if this.isErrorRetriable(err) {
+			if this.isSkippable(err) {
+				continue
+			} else if this.isErrorRetriable(err) {
 				retriableError = true
 				time.Sleep(retry)
 				continue
@@ -193,6 +195,14 @@ func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
 			WithField("retriable", retriableError).
 			Panicln("failed flushing")
 	}
+}
+
+func (this *App) isSkippable(err error) bool {
+	if strings.Contains(err.Error(), "No bulk actions to commit") {
+		return true
+	}
+
+	return false
 }
 
 func (this *App) isErrorRetriable(err error) bool {
