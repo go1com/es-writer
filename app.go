@@ -49,6 +49,19 @@ func (this *App) Run(ctx context.Context, container Container) {
 func (this *App) loop(ctx context.Context, container Container) error {
 	ticker := time.NewTicker(*container.TickInterval)
 
+	// ping server every 5m to avoid connection reset error
+	go func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				break
+
+			case <-time.After(5 * time.Minute):
+				_, _ = this.es.ClusterHealth().Do(ctx)
+			}
+		}
+	}(ctx)
+
 	for {
 		select {
 		case <-ctx.Done():
