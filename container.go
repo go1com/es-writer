@@ -20,13 +20,14 @@ import (
 var (
 	bufferMutext    sync.Mutex
 	retriesInterval = []time.Duration{
-		15 * time.Second,
-		30 * time.Second,
-		60 * time.Second,
-		60 * time.Second,
-		90 * time.Second,
-		90 * time.Second,
-		90 * time.Second,
+		1 * time.Second,
+		2 * time.Second,
+		3 * time.Second,
+		5 * time.Second,
+		8 * time.Second,
+		13 * time.Second,
+		21 * time.Second,
+		34 * time.Second,
 	}
 )
 
@@ -132,8 +133,7 @@ func (this *Container) queueConnection() (*amqp.Connection, error) {
 	go func() {
 		conCloseChan := con.NotifyClose(make(chan *amqp.Error))
 
-		select
-		{
+		select {
 		case err := <-conCloseChan:
 			if err != nil {
 				logrus.WithError(err).Panicln("RabbitMQ connection error.")
@@ -177,8 +177,7 @@ func (this *Container) queueChannel(con *amqp.Connection) (*amqp.Channel, error)
 	go func() {
 		chCloseChan := ch.NotifyClose(make(chan *amqp.Error))
 
-		select
-		{
+		select {
 		case err := <-chCloseChan:
 			if err != nil {
 				this.Logger.WithError(err).Errorln("RabbitMQ channel error.")
@@ -199,7 +198,7 @@ func (this *Container) elasticSearchClient() (*elastic.Client, error) {
 
 		return nil, err
 	}
-
+	
 	client, err := elastic.NewClientFromConfig(cfg)
 	if err != nil {
 		return nil, err
