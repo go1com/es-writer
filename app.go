@@ -187,7 +187,7 @@ func (this *App) isErrorRetriable(err error) bool {
 
 	if strings.Contains(err.Error(), "no available connection") {
 		retriable = true
-	} else if !strings.Contains(err.Error(), "connection reset by peer") {
+	} else if strings.Contains(err.Error(), "connection reset by peer") {
 		retriable = true
 	} else if strings.HasPrefix(err.Error(), "Post") {
 		if strings.HasSuffix(err.Error(), "EOF") {
