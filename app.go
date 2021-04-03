@@ -175,12 +175,10 @@ func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
 	}
 
 	if hasError != nil {
-		if !strings.Contains(hasError.Error(), "connection reset by peer") {
-			logrus.
-				WithError(hasError).
-				WithField("retriable", retriableError).
-				Panicln("failed flushing")
-		}
+		logrus.
+			WithError(hasError).
+			WithField("retriable", retriableError).
+			Panicln("failed flushing")
 	}
 }
 
