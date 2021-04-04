@@ -51,6 +51,7 @@ type Container struct {
 	Logger               *logrus.Logger
 	Stop                 chan bool
 	SingleActiveConsumer *bool
+	BulkTimeout          *string
 }
 
 type DataDogConfig struct {
@@ -113,6 +114,9 @@ func NewContainer() Container {
 	ctn.Refresh = flag.String("refresh", env("ES_REFRESH", "true"), "")
 	ctn.SingleActiveConsumer = flag.Bool("single-active-consumer", singleActiveConsumer, "")
 	ctn.Logger = logrus.StandardLogger()
+	bulkTimeout := env("BULK_TIMEOUT", "5m")
+	ctn.BulkTimeout = flag.String("bulk-timeout", bulkTimeout, "")
+
 	flag.Parse()
 
 	if host := env("DD_AGENT_HOST", ""); host != "" {
@@ -203,7 +207,7 @@ func (this *Container) elasticSearchClient() (*elastic.Client, error) {
 
 		return nil, err
 	}
-	
+
 	client, err := elastic.NewClientFromConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -237,17 +241,24 @@ func (this *Container) App() (*App, error, chan bool) {
 		os.Exit(1)
 	}()
 
+	bulkTimeout, err := time.ParseDuration(*this.BulkTimeout)
+	if nil != err {
+		return nil, err, nil
+	}
+
 	return &App{
 		debug: *this.Debug,
 		rabbit: &RabbitMqInput{
 			ch:   ch,
 			tags: []uint64{},
 		},
-		buffer:         action.NewContainer(),
-		count:          *this.PrefetchCount,
-		urlContains:    *this.UrlContain,
-		urlNotContains: *this.UrlNotContain,
-		es:             es,
-		refresh:        *this.Refresh,
+		buffer:            action.NewContainer(),
+		count:             *this.PrefetchCount,
+		urlContains:       *this.UrlContain,
+		urlNotContains:    *this.UrlNotContain,
+		es:                es,
+		bulkTimeoutString: *this.BulkTimeout,
+		bulkTimeout:       bulkTimeout,
+		refresh:           *this.Refresh,
 	}, nil, this.Stop
 }

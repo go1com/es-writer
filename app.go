@@ -29,9 +29,10 @@ type App struct {
 	urlNotContains string
 
 	// ElasticSearch
-	es      *elastic.Client
-	bulk    *elastic.BulkProcessor
-	refresh string
+	es                *elastic.Client
+	bulkTimeoutString string
+	bulkTimeout       time.Duration
+	refresh           string
 }
 
 func (this *App) Run(ctx context.Context, container Container) {
@@ -152,11 +153,14 @@ func (this *App) handleUnbulkableRequest(ctx context.Context, requestType string
 
 func (this *App) flush(ctx context.Context) {
 	bulk := this.es.Bulk().Refresh(this.refresh)
-
+	bulk.Timeout(this.bulkTimeoutString)
+	
 	for _, element := range this.buffer.Elements() {
 		bulk.Add(element)
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, this.bulkTimeout)
+	defer cancel()
 	this.doFlush(ctx, bulk)
 	this.buffer.Clear()
 	this.rabbit.onFlush()
