@@ -167,12 +167,18 @@ func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
 	var retriableError bool
 
 	for _, retry := range retriesInterval {
+		logrus.Debugln("Flushing")
 		res, err := bulk.Do(ctx)
 		hasError = err
 
 		if err != nil {
 			if this.isErrorRetriable(err) {
 				retriableError = true
+
+				logrus.
+					WithField("time", retry).
+					Infoln("Sleep")
+
 				time.Sleep(retry)
 				continue
 			} else {
