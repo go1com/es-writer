@@ -48,6 +48,7 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
         -admin-port      ADMIN_PORT<STRING=:8001>
         -debug           DEBUG<BOOL=true>. Default is false
         -single-active-consumer SINGLE_ACTIVE_CONSUMER<BOOL=true>. default is false. @see https://www.rabbitmq.com/consumers.html#single-active-consumer
+        -bulk-timeout BULK_TIMEOUT=5m
 
 ### Notes
 
