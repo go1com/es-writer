@@ -5,26 +5,23 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
-func Test_ExitWhenChannelClosed(t *testing.T)  {
+func Test_ExitWhenChannelClosed(t *testing.T) {
 	logger, hook := test.NewNullLogger()
 
-	f := container()
-	f.Stop = make(chan bool)
-	f.Logger = logger
+	ctn := container()
+	ctn.Stop = make(chan bool)
+	ctn.Logger = logger
+	con, err := ctn.queueConnection()
+	assert.NoError(t, err)
 
-	con, err := f.queueConnection()
-	if err != nil {
-		t.Error(err)
-	}
+	ch, err := ctn.queueChannel(con)
+	assert.NoError(t, err)
 
-	ch, err := f.queueChannel(con)
-	if err != nil {
-		t.Error(err)
-	}
-
-	ch.Close()
+	_ = ch.Close()
+	time.Sleep(100 * time.Millisecond)
 
 	assert.Equal(t, 1, len(hook.Entries))
 	assert.Equal(t, logrus.ErrorLevel, hook.LastEntry().Level)
