@@ -152,20 +152,23 @@ func (this *App) handleUnbulkableRequest(ctx context.Context, requestType string
 }
 
 func (this *App) flush(ctx context.Context) error {
-	bulk := this.es.Bulk().Refresh(this.refresh)
-	bulk.Timeout(this.bulkTimeoutString)
+	var cancel context.CancelFunc
 
+	bulk := this.es.Bulk().Refresh(this.refresh)
 	for _, element := range this.buffer.Elements() {
 		bulk.Add(element)
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, this.bulkTimeout)
-	defer cancel()
+	if this.bulkTimeoutString != "" {
+		bulk.Timeout(this.bulkTimeoutString)
+		ctx, cancel = context.WithTimeout(ctx, this.bulkTimeout)
+		defer cancel()
+	}
 
 	if err := this.doFlush(ctx, bulk); nil != err {
 		return err
 	}
-
+	
 	this.buffer.Clear()
 	this.rabbit.onFlush()
 
@@ -182,8 +185,8 @@ func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) error {
 				logrus.
 					WithField("error", err).
 					Infoln("Skip error")
-
-				continue
+				
+				break
 			} else if this.isErrorRetriable(err) {
 				logrus.
 					WithField("time", retry).
