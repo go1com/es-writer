@@ -57,6 +57,8 @@ func main() {
 		defer tracer.Stop()
 	}
 
+	logrus.SetFormatter(&logrus.JSONFormatter{})
+
 	go app.Run(ctx, ctn)
 
 	terminate := make(chan os.Signal, 1)
