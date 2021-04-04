@@ -52,7 +52,7 @@ func (this *RabbitMqInput) start(ctx context.Context, flags Container, handler P
 			bufferMutext.Lock()
 			err := this.onMessage(ctx, message, handler)
 			bufferMutext.Unlock()
-			
+
 			if nil != err {
 				return err
 			}

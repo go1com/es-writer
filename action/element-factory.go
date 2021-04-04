@@ -10,7 +10,7 @@ import (
 
 func NewElement(raw []byte) (Element, error) {
 	e := Element{}
-	
+
 	err := json.Unmarshal(raw, &e)
 	if err != nil {
 		return e, fmt.Errorf("failed to parse element body: %s", err.Error())
