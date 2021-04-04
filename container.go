@@ -90,6 +90,11 @@ func NewContainer() Container {
 		logrus.WithError(err).Panicln("single-active-consumer is invalid.")
 	}
 
+	debug, err := strconv.ParseBool(env("DEBUG", "false"))
+	if err != nil {
+		logrus.WithError(err).Panicln("debug is invalid.")
+	}
+
 	ctn := Container{}
 	ctn.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
 	ctn.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
@@ -103,7 +108,7 @@ func NewContainer() Container {
 	ctn.UrlNotContain = flag.String("url-not-contains", env("URL_NOT_CONTAINS", ""), "")
 	ctn.ConsumerName = flag.String("consumer-name", env("RABBITMQ_CONSUMER_NAME", "es-writter"), "")
 	ctn.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
-	ctn.Debug = flag.Bool("debug", false, "Enable with care; credentials can be leaked if this is on.")
+	ctn.Debug = flag.Bool("debug", debug, "Enable with care; credentials can be leaked if this is on.")
 	ctn.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
 	ctn.Refresh = flag.String("refresh", env("ES_REFRESH", "true"), "")
 	ctn.SingleActiveConsumer = flag.Bool("single-active-consumer", singleActiveConsumer, "")

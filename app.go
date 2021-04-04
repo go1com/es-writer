@@ -168,10 +168,9 @@ func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
 
 	for _, retry := range retriesInterval {
 		res, err := bulk.Do(ctx)
+		hasError = err
 
 		if err != nil {
-			hasError = err
-
 			if this.isErrorRetriable(err) {
 				retriableError = true
 				time.Sleep(retry)
