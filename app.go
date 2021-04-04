@@ -168,7 +168,7 @@ func (this *App) flush(ctx context.Context) error {
 	if err := this.doFlush(ctx, bulk); nil != err {
 		return err
 	}
-	
+
 	this.buffer.Clear()
 	this.rabbit.onFlush()
 
@@ -185,7 +185,7 @@ func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) error {
 				logrus.
 					WithField("error", err).
 					Infoln("Skip error")
-				
+
 				break
 			} else if this.isErrorRetriable(err) {
 				logrus.

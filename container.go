@@ -202,13 +202,14 @@ func (this *Container) queueChannel(con *amqp.Connection) (*amqp.Channel, error)
 
 func (this *Container) elasticSearchClient() (*elastic.Client, error) {
 	cfg, err := config.Parse(*this.EsUrl)
+
 	if err != nil {
 		logrus.Fatalf("failed to parse URL: %s", err.Error())
 
 		return nil, err
 	}
 
-	client, err := elastic.NewClientFromConfig(cfg)
+	client, err := NewClientFromConfig(cfg, true)
 	if err != nil {
 		return nil, err
 	}
