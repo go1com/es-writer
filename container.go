@@ -114,7 +114,7 @@ func NewContainer() Container {
 	ctn.Refresh = flag.String("refresh", env("ES_REFRESH", "true"), "")
 	ctn.SingleActiveConsumer = flag.Bool("single-active-consumer", singleActiveConsumer, "")
 	ctn.Logger = logrus.StandardLogger()
-	bulkTimeout := env("BULK_TIMEOUT", "5m")
+	bulkTimeout := env("BULK_TIMEOUT", "2m")
 	ctn.BulkTimeout = flag.String("bulk-timeout", bulkTimeout, "")
 
 	flag.Parse()
