@@ -35,16 +35,14 @@ type App struct {
 	refresh           string
 }
 
-func (this *App) Run(ctx context.Context, container Container) {
+func (this *App) Run(ctx context.Context, container Container) error {
 	handler := this.push()
 
 	eg := errgroup.Group{}
 	eg.Go(func() error { return this.rabbit.start(ctx, container, handler) })
 	eg.Go(func() error { return this.loop(ctx, container) })
-	err := eg.Wait()
-	if nil != err {
-		logrus.WithError(err).Errorln("application exit")
-	}
+
+	return eg.Wait()
 }
 
 func (this *App) loop(ctx context.Context, container Container) error {
@@ -71,12 +69,14 @@ func (this *App) loop(ctx context.Context, container Container) error {
 		case <-ticker.C:
 			if this.buffer.Length() > 0 {
 				bufferMutext.Lock()
-				this.flush(ctx)
+				if err := this.flush(ctx); nil != err {
+					return err
+				}
+
 				bufferMutext.Unlock()
 			}
 		}
 	}
-
 }
 
 func (this *App) push() PushCallback {
@@ -106,7 +106,9 @@ func (this *App) push() PushCallback {
 		requestType := element.RequestType()
 		if "bulkable" != requestType {
 			if this.buffer.Length() > 0 {
-				this.flush(ctx)
+				if err := this.flush(ctx); nil != err {
+					return err, false, buffer
+				}
 			}
 
 			err = this.handleUnbulkableRequest(ctx, requestType, element)
@@ -123,9 +125,7 @@ func (this *App) push() PushCallback {
 			return nil, ack, buffer
 		}
 
-		this.flush(ctx)
-
-		return nil, ack, buffer
+		return this.flush(ctx), ack, buffer
 	}
 }
 
@@ -151,42 +151,43 @@ func (this *App) handleUnbulkableRequest(ctx context.Context, requestType string
 	}
 }
 
-func (this *App) flush(ctx context.Context) {
+func (this *App) flush(ctx context.Context) error {
+	var cancel context.CancelFunc
+
 	bulk := this.es.Bulk().Refresh(this.refresh)
-	bulk.Timeout(this.bulkTimeoutString)
-	
 	for _, element := range this.buffer.Elements() {
 		bulk.Add(element)
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, this.bulkTimeout)
-	defer cancel()
-	this.doFlush(ctx, bulk)
+	if this.bulkTimeoutString != "" {
+		bulk.Timeout(this.bulkTimeoutString)
+		ctx, cancel = context.WithTimeout(ctx, this.bulkTimeout)
+		defer cancel()
+	}
+
+	if err := this.doFlush(ctx, bulk); nil != err {
+		return err
+	}
+	
 	this.buffer.Clear()
 	this.rabbit.onFlush()
+
+	return nil
 }
 
-func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
-	var hasError error
-	var retriableError bool
-
+func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) error {
 	for _, retry := range retriesInterval {
 		logrus.Debugln("Flushing")
 		res, err := bulk.Do(ctx)
-		hasError = err
 
 		if err != nil {
-			hasError = err
-
 			if this.isSkippable(err) {
 				logrus.
 					WithField("error", err).
 					Infoln("Skip error")
-
-				continue
+				
+				break
 			} else if this.isErrorRetriable(err) {
-				retriableError = true
-
 				logrus.
 					WithField("time", retry).
 					Infoln("Sleep")
@@ -194,8 +195,7 @@ func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
 				time.Sleep(retry)
 				continue
 			} else {
-				retriableError = false
-				break
+				return err
 			}
 		}
 
@@ -204,12 +204,7 @@ func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) {
 		break
 	}
 
-	if hasError != nil {
-		logrus.
-			WithError(hasError).
-			WithField("retriable", retriableError).
-			Panicln("failed flushing")
-	}
+	return nil
 }
 
 func (this *App) isSkippable(err error) bool {

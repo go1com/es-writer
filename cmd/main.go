@@ -36,15 +36,6 @@ func main() {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	app, err, stop := ctn.App()
-	if err != nil {
-		logrus.
-			WithError(err).
-			Panicln("failed to get the app")
-	}
-
-	defer func() { stop <- true }()
-
 	if ctn.DataDog.Host != "" {
 		addr := net.JoinHostPort(ctn.DataDog.Host, ctn.DataDog.Port)
 
@@ -59,7 +50,16 @@ func main() {
 
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 
-	go app.Run(ctx, ctn)
+	go func() {
+		for {
+			if app, err, onErrorCh := ctn.App(); err != nil {
+				logrus.WithError(err).Panicln("failed to get the app")
+			} else if err := app.Run(ctx, ctn); nil != err {
+				logrus.WithError(err).Error("application error")
+				onErrorCh <- true
+			}
+		}
+	}()
 
 	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, os.Interrupt, syscall.SIGTERM)

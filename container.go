@@ -51,7 +51,7 @@ type Container struct {
 	Logger               *logrus.Logger
 	Stop                 chan bool
 	SingleActiveConsumer *bool
-	BulkTimeout          *string
+	BulkTimeoutString    *string
 }
 
 type DataDogConfig struct {
@@ -115,7 +115,7 @@ func NewContainer() Container {
 	ctn.SingleActiveConsumer = flag.Bool("single-active-consumer", singleActiveConsumer, "")
 	ctn.Logger = logrus.StandardLogger()
 	bulkTimeout := env("BULK_TIMEOUT", "2m")
-	ctn.BulkTimeout = flag.String("bulk-timeout", bulkTimeout, "")
+	ctn.BulkTimeoutString = flag.String("bulk-timeout", bulkTimeout, "")
 
 	flag.Parse()
 
@@ -241,9 +241,15 @@ func (this *Container) App() (*App, error, chan bool) {
 		os.Exit(1)
 	}()
 
-	bulkTimeout, err := time.ParseDuration(*this.BulkTimeout)
-	if nil != err {
-		return nil, err, nil
+	var bulkTimeOutString string
+	var bulkTimeout time.Duration
+
+	if nil != this.BulkTimeoutString {
+		bulkTimeOutString = *this.BulkTimeoutString
+		bulkTimeout, err = time.ParseDuration(bulkTimeOutString)
+		if nil != err {
+			return nil, err, nil
+		}
 	}
 
 	return &App{
@@ -257,7 +263,7 @@ func (this *Container) App() (*App, error, chan bool) {
 		urlContains:       *this.UrlContain,
 		urlNotContains:    *this.UrlNotContain,
 		es:                es,
-		bulkTimeoutString: *this.BulkTimeout,
+		bulkTimeoutString: bulkTimeOutString,
 		bulkTimeout:       bulkTimeout,
 		refresh:           *this.Refresh,
 	}, nil, this.Stop

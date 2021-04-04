@@ -50,16 +50,20 @@ func (this *RabbitMqInput) start(ctx context.Context, flags Container, handler P
 
 		case message := <-messages:
 			bufferMutext.Lock()
-			this.onMessage(ctx, message, handler)
+			err := this.onMessage(ctx, message, handler)
 			bufferMutext.Unlock()
+			
+			if nil != err {
+				return err
+			}
 		}
 	}
 }
 
-func (this *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handler PushCallback) {
+func (this *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handler PushCallback) error {
 	if m.DeliveryTag == 0 {
 		this.ch.Nack(m.DeliveryTag, false, false)
-		return
+		return nil
 	}
 
 	// distributed tracing
@@ -80,15 +84,21 @@ func (this *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handl
 	err, ack, buffer := handler(ctx, m.Body)
 	if err != nil {
 		logrus.WithError(err).Errorln("Failed to handle new message: " + string(m.Body))
+
+		return err
 	}
 
 	if ack {
-		this.ch.Ack(m.DeliveryTag, false)
+		if err := this.ch.Ack(m.DeliveryTag, false); nil != err {
+			return err
+		}
 	}
 
 	if buffer {
 		this.tags = append(this.tags, m.DeliveryTag)
 	}
+
+	return nil
 }
 
 func (this *RabbitMqInput) onFlush() {
