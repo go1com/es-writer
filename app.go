@@ -181,13 +181,7 @@ func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) error {
 		res, err := bulk.Do(ctx)
 
 		if err != nil {
-			if this.isSkippable(err) {
-				logrus.
-					WithField("error", err).
-					Infoln("Skip error")
-
-				break
-			} else if this.isErrorRetriable(err) {
+			if this.isErrorRetriable(err) {
 				logrus.
 					WithField("time", retry).
 					Infoln("Sleep")
@@ -205,14 +199,6 @@ func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) error {
 	}
 
 	return nil
-}
-
-func (this *App) isSkippable(err error) bool {
-	if strings.Contains(err.Error(), "No bulk actions to commit") {
-		return true
-	}
-
-	return false
 }
 
 func (this *App) isErrorRetriable(err error) bool {
