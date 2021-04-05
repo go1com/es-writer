@@ -125,7 +125,7 @@ func (this *App) push() PushCallback {
 			return nil, ack, buffer
 		}
 
-		return this.flush(ctx), ack, buffer
+		return this.flush(ctx), ack, true
 	}
 }
 
