@@ -70,10 +70,12 @@ func (this *App) loop(ctx context.Context, container Container) error {
 			if this.buffer.Length() > 0 {
 				bufferMutext.Lock()
 				if err := this.flush(ctx); nil != err {
+					bufferMutext.Unlock()
+					
 					return err
+				} else {
+					bufferMutext.Unlock()
 				}
-
-				bufferMutext.Unlock()
 			}
 		}
 	}
