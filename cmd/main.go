@@ -50,14 +50,15 @@ func main() {
 
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 
+	app, err, onErrorCh := ctn.App()
+	if err != nil {
+		logrus.WithError(err).Panicln("failed to get the app")
+	}
+
 	go func() {
-		for {
-			if app, err, onErrorCh := ctn.App(); err != nil {
-				logrus.WithError(err).Panicln("failed to get the app")
-			} else if err := app.Run(ctx, ctn); nil != err {
-				logrus.WithError(err).Error("application error")
-				onErrorCh <- true
-			}
+		if err := app.Run(ctx, ctn); err != nil {
+			logrus.WithError(err).Error("application error")
+			onErrorCh <- true
 		}
 	}()
 
