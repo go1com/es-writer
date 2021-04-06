@@ -35,6 +35,8 @@ type App struct {
 	bulkTimeoutString string
 	bulkTimeout       time.Duration
 	refresh           string
+	isFlushing        bool
+	isFlushingRWMutex *sync.RWMutex
 }
 
 func (this *App) Run(ctx context.Context, container Container) error {
@@ -56,6 +58,14 @@ func (this *App) loop(ctx context.Context, container Container) error {
 			return ctx.Err()
 
 		case <-ticker.C:
+			this.isFlushingRWMutex.RLock()
+			if this.isFlushing {
+				this.isFlushingRWMutex.RUnlock()
+				continue
+			} else {
+				this.isFlushingRWMutex.RUnlock()
+			}
+
 			if err := this.flush(ctx); nil != err {
 				return err
 			}
@@ -143,7 +153,14 @@ func (this *App) handleUnbulkableRequest(ctx context.Context, requestType string
 
 func (this *App) flush(ctx context.Context) error {
 	this.mutex.Lock()
-	defer this.mutex.Unlock()
+	this.isFlushingRWMutex.Lock()
+	this.isFlushing = true
+
+	defer func() {
+		this.isFlushing = false
+		this.mutex.Unlock()
+		this.isFlushingRWMutex.Unlock()
+	}()
 
 	if this.buffer.Length() == 0 {
 		return nil
@@ -232,5 +249,9 @@ func (this *App) verboseResponse(res *elastic.BulkResponse) {
 		}
 	}
 
-	logrus.Debugln("[push] bulk took: ", res.Took)
+	logrus.
+		WithField("res.took", res.Took).
+		WithField("res.items", len(res.Items)).
+		WithField("res.errors", res.Errors).
+		Debugln("bulk done")
 }
