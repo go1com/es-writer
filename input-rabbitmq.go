@@ -51,10 +51,7 @@ func (this *RabbitMqInput) start(ctx context.Context, flags Container, handler P
 			return ctx.Err()
 
 		case message := <-messages:
-			bufferMutext.Lock()
 			err := this.onMessage(ctx, message, handler)
-			bufferMutext.Unlock()
-
 			if nil != err {
 				return err
 			}

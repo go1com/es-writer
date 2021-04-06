@@ -24,7 +24,7 @@ func handleUpdateByQuery(ctx context.Context, client *elastic.Client, element ac
 		if err == nil {
 			break
 		}
-		
+
 		if strings.Contains(err.Error(), "Error 409 (Conflict)") {
 			logrus.WithError(err).WithField("sleep", conflictRetryInterval).Errorf("writing has conflict; try again")
 			time.Sleep(conflictRetryInterval)

@@ -18,7 +18,6 @@ import (
 )
 
 var (
-	bufferMutext    sync.Mutex
 	retriesInterval = []time.Duration{
 		1 * time.Second,
 		2 * time.Second,
@@ -260,6 +259,7 @@ func (this *Container) App() (*App, error, chan bool) {
 			tags: []uint64{},
 		},
 		buffer:            action.NewContainer(),
+		mutex:             &sync.Mutex{},
 		count:             *this.PrefetchCount,
 		urlContains:       *this.UrlContain,
 		urlNotContains:    *this.UrlNotContain,
