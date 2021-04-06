@@ -4,34 +4,34 @@ import "sync"
 
 type Container struct {
 	elements []Element
-	mutext   *sync.Mutex
+	mutex    *sync.RWMutex
 }
 
 func NewContainer() *Container {
 	return &Container{
 		elements: []Element{},
-		mutext:   &sync.Mutex{},
+		mutex:    &sync.RWMutex{},
 	}
 }
 
 func (c *Container) Add(element Element) {
-	c.mutext.Lock()
-	defer c.mutext.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	c.elements = append(c.elements, element)
 
 }
 
 func (c *Container) Clear() {
-	c.mutext.Lock()
-	defer c.mutext.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	c.elements = []Element{}
 }
 
 func (c *Container) Length() int {
-	c.mutext.Lock()
-	defer c.mutext.Unlock()
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 
 	return len(c.elements)
 }

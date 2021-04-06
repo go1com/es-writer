@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -22,6 +23,7 @@ type App struct {
 	// RabbitMQ
 	rabbit *RabbitMqInput
 	buffer *action.Container
+	mutex  *sync.Mutex
 	count  int
 
 	// message filtering
@@ -54,15 +56,8 @@ func (this *App) loop(ctx context.Context, container Container) error {
 			return ctx.Err()
 
 		case <-ticker.C:
-			if this.buffer.Length() > 0 {
-				bufferMutext.Lock()
-				if err := this.flush(ctx); nil != err {
-					bufferMutext.Unlock()
-
-					return err
-				} else {
-					bufferMutext.Unlock()
-				}
+			if err := this.flush(ctx); nil != err {
+				return err
 			}
 		}
 	}
@@ -147,6 +142,13 @@ func (this *App) handleUnbulkableRequest(ctx context.Context, requestType string
 }
 
 func (this *App) flush(ctx context.Context) error {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
+	if this.buffer.Length() == 0 {
+		return nil
+	}
+
 	var cancel context.CancelFunc
 
 	bulk := this.es.Bulk().Refresh(this.refresh)
