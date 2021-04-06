@@ -267,6 +267,8 @@ func (this *Container) App() (*App, error, chan bool) {
 		bulkTimeoutString: bulkTimeOutString,
 		bulkTimeout:       bulkTimeout,
 		refresh:           *this.Refresh,
+		isFlushing:        false,
+		isFlushingRWMutex: &sync.RWMutex{},
 	}
 
 	app.rabbit.app = app
