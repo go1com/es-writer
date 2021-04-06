@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/go1com/es-writer/action"
 
 	"github.com/sirupsen/logrus"
@@ -42,36 +40,9 @@ type App struct {
 func (this *App) Run(ctx context.Context, container Container) error {
 	handler := this.push()
 
-	eg := errgroup.Group{}
-	eg.Go(func() error { return this.rabbit.start(ctx, container, handler) })
-	eg.Go(func() error { return this.loop(ctx, container) })
-
-	return eg.Wait()
+	return this.rabbit.start(ctx, container, handler)
 }
 
-func (this *App) loop(ctx context.Context, container Container) error {
-	ticker := time.NewTicker(*container.TickInterval)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-
-		case <-ticker.C:
-			this.isFlushingRWMutex.RLock()
-			if this.isFlushing {
-				this.isFlushingRWMutex.RUnlock()
-				continue
-			} else {
-				this.isFlushingRWMutex.RUnlock()
-			}
-
-			if err := this.flush(ctx); nil != err {
-				return err
-			}
-		}
-	}
-}
 
 func (this *App) push() PushCallback {
 	return func(ctx context.Context, body []byte) (error, bool, bool, bool) {
