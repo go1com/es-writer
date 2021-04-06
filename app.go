@@ -120,7 +120,7 @@ func (this *App) push() PushCallback {
 			return nil, ack, buffer, false
 		}
 
-		return nil, ack, false, true
+		return nil, ack, true, true
 	}
 }
 
