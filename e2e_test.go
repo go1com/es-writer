@@ -14,6 +14,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
+	"github.com/stretchr/testify/assert"
 
 	"gopkg.in/olivere/elastic.v5"
 )
@@ -27,12 +28,12 @@ func container() Container {
 	routingKey := env("RABBITMQ_ROUTING_KEY", "qa")
 	prefetchCount := 50
 	prefetchSize := 0
-	tickInterval := 3 * time.Second
+	tickInterval := 1 * time.Second
 	queueName := "es-writer-qa"
 	urlContain := ""
 	urlNotContain := ""
 	consumerName := ""
-	esUrl := env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false")
+	esUrl := env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false&tracelog=/tmp/tracelog")
 	debug := true
 	refresh := "true"
 
@@ -56,25 +57,21 @@ func container() Container {
 }
 
 func idle(w *App) {
-	time.Sleep(2 * time.Second)
-	defer time.Sleep(5 * time.Second)
-
 	for {
 		units := w.buffer.Length()
 		if 0 == units {
+			time.Sleep(3333 * time.Millisecond)
 			break
 		} else {
+			time.Sleep(333 * time.Millisecond)
 			logrus.Infof("Remaining buffer: %d\n", units)
 		}
-
-		time.Sleep(2 * time.Second)
 	}
 }
 
-func queue(ch *amqp.Channel, f Container, file string) {
-	err := ch.Publish(*f.Exchange, *f.RoutingKey, false, false, amqp.Publishing{
-		Body: fixture(file),
-	})
+func queue(ch *amqp.Channel, ctn Container, file string) {
+	msg := amqp.Publishing{Body: fixture(file)}
+	err := ch.Publish(*ctn.Exchange, *ctn.RoutingKey, false, false, msg)
 
 	if err != nil {
 		logrus.WithError(err).Panicln("failed to publish message")
@@ -89,57 +86,48 @@ func fixture(filePath string) []byte {
 	return body
 }
 
-func TestFlags(t *testing.T) {
-	f := container()
-	con, _ := f.queueConnection()
-	defer con.Close()
-	ch, _ := f.queueChannel(con)
-	defer ch.Close()
-
-	queue(ch, f, "indices-create.json")
-}
-
 func TestBulk(t *testing.T) {
+	ass := assert.New(t)
 	ctx := context.Background()
 	ctn := container()
 	app, _, stop := ctn.App()
+	purge := func() { app.rabbit.ch.QueuePurge(*ctn.QueueName, false) }
 	defer func() { stop <- true }()
-	defer app.rabbit.ch.QueuePurge(*ctn.QueueName, false)
+	defer purge()
 	defer elastic.NewIndicesDeleteService(app.es).Index([]string{"go1_qa"}).Do(ctx)
 	go app.Run(ctx, ctn)
-	time.Sleep(3 * time.Second)
+	time.Sleep(333 * time.Millisecond)
 
 	t.Run("index", func(t *testing.T) {
 		t.Run("create", func(t *testing.T) {
+			purge()
 			queue(app.rabbit.ch, ctn, "indices/indices-create.json") // queue a message to rabbitMQ
 			idle(app)                                                // Wait a bit so that the message can be consumed.
 
 			res, err := elastic.NewIndicesGetService(app.es).Index("go1_qa").Do(ctx)
-			if err != nil {
-				t.Fatal(err.Error())
-			}
+
+			ass.NoError(err)
 
 			response := res["go1_qa"]
 			expecting := `{"portal":{"_routing":{"required":true},"properties":{"author":{"properties":{"email":{"type":"text"},"name":{"type":"text"}}},"id":{"type":"keyword"},"name":{"type":"keyword"},"status":{"type":"short"},"title":{"fields":{"analyzed":{"type":"text"}},"type":"keyword"}}}}`
 			actual, _ := json.Marshal(response.Mappings)
-
-			if expecting != string(actual) {
-				t.Fail()
-			}
+			ass.Equal(expecting, string(actual))
 		})
 
 		t.Run("delete", func(t *testing.T) {
+			purge()
 			queue(app.rabbit.ch, ctn, "indices/indices-create.json") // create the index
 			queue(app.rabbit.ch, ctn, "indices/indices-drop.json")   // then, drop it.
 			idle(app)                                                // Wait a bit so that the message can be consumed.
 
 			_, err := elastic.NewIndicesGetService(app.es).Index("go1_qa").Do(ctx)
-			if !strings.Contains(err.Error(), "[type=index_not_found_exception]") {
-				t.Fatal("Index is not deleted successfully.")
-			}
+
+			ass.Error(err)
+			ass.Contains(err.Error(), "[type=index_not_found_exception]", "Index is not deleted successfully.")
 		})
 
 		t.Run("alias", func(t *testing.T) {
+			purge()
 			queue(app.rabbit.ch, ctn, "indices/indices-create.json")
 			queue(app.rabbit.ch, ctn, "portal/portal-index.json")
 			queue(app.rabbit.ch, ctn, "indices/indices-alias.json")
@@ -154,22 +142,17 @@ func TestBulk(t *testing.T) {
 				FetchSource(true).
 				Do(ctx)
 
-			if err != nil {
-				logrus.WithError(err).Fatalln("failed loading")
-			} else {
-				source, _ := json.Marshal(res.Source)
-				correctTitle := strings.Contains(string(source), `"title":"qa.mygo1.com"`)
-				correctStatus := strings.Contains(string(source), `"status":1`)
+			ass.NoError(err)
 
-				if !correctTitle || !correctStatus {
-					t.Error("failed to update portal document")
-				}
-			}
+			source, _ := json.Marshal(res.Source)
+			ass.Contains(string(source), `"title":"qa.mygo1.com"`)
+			ass.Contains(string(source), `"status":1`)
 		})
 	})
 
 	t.Run("bulk", func(t *testing.T) {
 		t.Run("create", func(t *testing.T) {
+			purge()
 			queue(app.rabbit.ch, ctn, "indices/indices-create.json") // create the index
 			queue(app.rabbit.ch, ctn, "portal/portal-index.json")    // create portal object
 			idle(app)                                                // Wait a bit so that the message can be consumed.
@@ -192,6 +175,7 @@ func TestBulk(t *testing.T) {
 		})
 
 		t.Run("update", func(t *testing.T) {
+			purge()
 			queue(app.rabbit.ch, ctn, "indices/indices-create.json") // create the index
 			queue(app.rabbit.ch, ctn, "portal/portal-index.json")    // portal.status = 1
 			queue(app.rabbit.ch, ctn, "portal/portal-update.json")   // portal.status = 0
@@ -218,6 +202,7 @@ func TestBulk(t *testing.T) {
 		})
 
 		t.Run("update conflict", func(t *testing.T) {
+			purge()
 			load := func() string {
 				res, _ := elastic.NewGetService(app.es).
 					Index("go1_qa").Routing("go1_qa").
@@ -257,11 +242,13 @@ func TestBulk(t *testing.T) {
 				portal := load()
 				if !strings.Contains(portal, `"status":4`) {
 					t.Error("failed to load portal document")
+					break
 				}
 			}
 		})
 
 		t.Run("update by query", func(t *testing.T) {
+			purge()
 			queue(app.rabbit.ch, ctn, "indices/indices-create.json")        // create the index
 			queue(app.rabbit.ch, ctn, "portal/portal-index.json")           // create portal, status is 1
 			queue(app.rabbit.ch, ctn, "portal/portal-update.json")          // update portal status to 0
@@ -277,27 +264,21 @@ func TestBulk(t *testing.T) {
 				FetchSource(true).
 				Do(ctx)
 
-			if err != nil {
-				logrus.WithError(err).Fatalln("failed loading")
-			} else {
-				source, _ := json.Marshal(res.Source)
-				correctTitle := strings.Contains(string(source), `"title":"qa.mygo1.com"`)
-				correctStatus := strings.Contains(string(source), `"status":2`)
-
-				if !correctTitle || !correctStatus {
-					t.Error("failed to update portal document")
-				}
-			}
+			ass.NoError(err)
+			source, _ := json.Marshal(res.Source)
+			ass.Contains(string(source), `"title":"qa.mygo1.com"`)
+			ass.Contains(string(source), `"status":2`)
 		})
 
 		t.Run("update graceful", func(t *testing.T) {
+			purge()
 			queue(app.rabbit.ch, ctn, "indices/indices-create.json")      // create the index
 			queue(app.rabbit.ch, ctn, "portal/portal-update.json")        // portal.status = 0
 			queue(app.rabbit.ch, ctn, "portal/portal-update-author.json") // portal.author.name = truong
 			queue(app.rabbit.ch, ctn, "portal/portal-index.json")         // portal.status = 1
 			idle(app)                                                     // Wait a bit so that the message can be consumed.
 
-			res, _ := elastic.
+			res, err := elastic.
 				NewGetService(app.es).
 				Index("go1_qa").
 				Routing("go1_qa").
@@ -306,15 +287,14 @@ func TestBulk(t *testing.T) {
 				FetchSource(true).
 				Do(ctx)
 
+			ass.NoError(err)
 			source, _ := json.Marshal(res.Source)
-			correctTitle := strings.Contains(string(source), `"title":"qa.mygo1.com"`)
-			correctStatus := strings.Contains(string(source), `"status":1`)
-			if !correctTitle || !correctStatus {
-				t.Error("failed gracefully update")
-			}
+			ass.Contains(string(source), `"title":"qa.mygo1.com"`)
+			ass.Contains(string(source), `"status":1`)
 		})
 
 		t.Run("delete", func(t *testing.T) {
+			purge()
 			queue(app.rabbit.ch, ctn, "indices/indices-create.json") // create the index
 			queue(app.rabbit.ch, ctn, "portal/portal-index.json")    // create portal object
 			queue(app.rabbit.ch, ctn, "portal/portal-delete.json")   // update portal object
@@ -329,12 +309,12 @@ func TestBulk(t *testing.T) {
 				FetchSource(true).
 				Do(ctx)
 
-			if !strings.Contains(err.Error(), "Error 404 (Not Found)") {
-				t.Error("failed to delete portal")
-			}
+			ass.Error(err)
+			ass.Contains(err.Error(), "Error 404 (Not Found)", "failed to delete portal")
 		})
 
 		t.Run("delete by query", func(t *testing.T) {
+			purge()
 			queue(app.rabbit.ch, ctn, "indices/indices-create.json")        // create the index
 			queue(app.rabbit.ch, ctn, "portal/portal-index.json")           // create portal, status is 1
 			queue(app.rabbit.ch, ctn, "portal/portal-delete-by-query.json") // update portal status to 0
@@ -349,9 +329,8 @@ func TestBulk(t *testing.T) {
 				FetchSource(true).
 				Do(ctx)
 
-			if !strings.Contains(err.Error(), "Error 404 (Not Found)") {
-				t.Error("failed to delete portal document")
-			}
+			ass.Error(err)
+			ass.Contains(err.Error(), "Error 404 (Not Found)", "failed to delete portal document")
 		})
 	})
 }

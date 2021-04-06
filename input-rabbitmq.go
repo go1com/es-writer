@@ -3,6 +3,7 @@ package es_writer
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
@@ -10,6 +11,7 @@ import (
 )
 
 type RabbitMqInput struct {
+	app  *App
 	ch   *amqp.Channel
 	tags []uint64
 }
@@ -81,21 +83,24 @@ func (this *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handl
 		defer span.Finish()
 	}
 
-	err, ack, buffer := handler(ctx, m.Body)
+	err, ack, buffer, flush := handler(ctx, m.Body)
 	if err != nil {
 		logrus.WithError(err).Errorln("Failed to handle new message: " + string(m.Body))
-
 		return err
 	}
 
 	if ack {
 		if err := this.ch.Ack(m.DeliveryTag, false); nil != err {
-			return err
+			return errors.Wrap(err, "failed ack")
 		}
 	}
 
 	if buffer {
 		this.tags = append(this.tags, m.DeliveryTag)
+	}
+
+	if flush {
+		return this.app.flush(ctx)
 	}
 
 	return nil
