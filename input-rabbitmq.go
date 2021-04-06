@@ -62,6 +62,7 @@ func (this *RabbitMqInput) start(ctx context.Context, container Container, handl
 			}
 
 		case <-time.After(*container.TickInterval):
+			flush = true
 		}
 
 		if flush {
