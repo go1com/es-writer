@@ -253,7 +253,7 @@ func (this *Container) App() (*App, error, chan bool) {
 		}
 	}
 
-	return &App{
+	app := &App{
 		debug: *this.Debug,
 		rabbit: &RabbitMqInput{
 			ch:   ch,
@@ -267,5 +267,9 @@ func (this *Container) App() (*App, error, chan bool) {
 		bulkTimeoutString: bulkTimeOutString,
 		bulkTimeout:       bulkTimeout,
 		refresh:           *this.Refresh,
-	}, nil, this.Stop
+	}
+
+	app.rabbit.app = app
+
+	return app, nil, this.Stop
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/go1com/es-writer/action"
 )
 
-func hanldeUpdateByQuery(ctx context.Context, client *elastic.Client, element action.Element, requestType string) error {
+func handleUpdateByQuery(ctx context.Context, client *elastic.Client, element action.Element, requestType string) error {
 	service, err := element.UpdateByQueryService(client)
 	if err != nil {
 		return err
@@ -24,9 +24,9 @@ func hanldeUpdateByQuery(ctx context.Context, client *elastic.Client, element ac
 		if err == nil {
 			break
 		}
-
+		
 		if strings.Contains(err.Error(), "Error 409 (Conflict)") {
-			logrus.WithError(err).Errorf("writing has conflict; try again in %s.\n", conflictRetryInterval)
+			logrus.WithError(err).WithField("sleep", conflictRetryInterval).Errorf("writing has conflict; try again")
 			time.Sleep(conflictRetryInterval)
 		}
 	}
@@ -34,7 +34,7 @@ func hanldeUpdateByQuery(ctx context.Context, client *elastic.Client, element ac
 	return err
 }
 
-func hanldeDeleteByQuery(ctx context.Context, client *elastic.Client, element action.Element, requestType string) error {
+func handleDeleteByQuery(ctx context.Context, client *elastic.Client, element action.Element, requestType string) error {
 	service, err := element.DeleteByQueryService(client)
 	if err != nil {
 		return err
@@ -66,8 +66,7 @@ func handleIndicesCreate(ctx context.Context, client *elastic.Client, element ac
 	_, err = service.Do(ctx)
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			logrus.WithError(err).Errorln("That's ok if the index is existing.")
-			return nil
+			return nil // That's ok if the index is existing.
 		}
 	}
 

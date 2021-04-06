@@ -14,7 +14,7 @@ import (
 	"gopkg.in/olivere/elastic.v5"
 )
 
-type PushCallback func(context.Context, []byte) (error, bool, bool)
+type PushCallback func(context.Context, []byte) (err error, ack bool, buff bool, flush bool)
 
 type App struct {
 	debug bool
@@ -48,19 +48,6 @@ func (this *App) Run(ctx context.Context, container Container) error {
 func (this *App) loop(ctx context.Context, container Container) error {
 	ticker := time.NewTicker(*container.TickInterval)
 
-	// ping server every 5m to avoid connection reset error
-	go func(ctx context.Context) {
-		for {
-			select {
-			case <-ctx.Done():
-				break
-
-			case <-time.After(5 * time.Minute):
-				_, _ = this.es.ClusterHealth().Do(ctx)
-			}
-		}
-	}(ctx)
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -71,7 +58,7 @@ func (this *App) loop(ctx context.Context, container Container) error {
 				bufferMutext.Lock()
 				if err := this.flush(ctx); nil != err {
 					bufferMutext.Unlock()
-					
+
 					return err
 				} else {
 					bufferMutext.Unlock()
@@ -82,25 +69,26 @@ func (this *App) loop(ctx context.Context, container Container) error {
 }
 
 func (this *App) push() PushCallback {
-	return func(ctx context.Context, body []byte) (error, bool, bool) {
-		buffer := false
+	return func(ctx context.Context, body []byte) (error, bool, bool, bool) {
 		ack := false
+		buffer := false
 		element, err := action.NewElement(body)
+
 		if err != nil {
-			return err, ack, buffer
+			return err, false, false, false
 		}
 
 		// message filtering: Don't process if not contains expecting text.
 		if "" != this.urlContains {
 			if !strings.Contains(element.Uri, this.urlContains) {
-				return nil, true, false
+				return nil, true, false, false
 			}
 		}
 
 		// message filtering: Don't process if contains unexpecting text.
 		if "" != this.urlNotContains {
 			if strings.Contains(element.Uri, this.urlNotContains) {
-				return nil, true, false
+				return nil, true, false, false
 			}
 		}
 
@@ -108,15 +96,20 @@ func (this *App) push() PushCallback {
 		requestType := element.RequestType()
 		if "bulkable" != requestType {
 			if this.buffer.Length() > 0 {
+				// before perform unbulkable action, we need flushing the buffer first.
 				if err := this.flush(ctx); nil != err {
-					return err, false, buffer
+					// failed flushing, can't execute unbulkable action yet.
+					// may try again later
+					return err, true, buffer, false
 				}
 			}
 
+			// execute unbulkable action now.
+			// if no error found, ack the message now.
 			err = this.handleUnbulkableRequest(ctx, requestType, element)
 			ack = err == nil
 
-			return err, ack, buffer
+			return err, ack, buffer, false
 		}
 
 		this.buffer.Add(element)
@@ -124,20 +117,20 @@ func (this *App) push() PushCallback {
 		if this.buffer.Length() < this.count {
 			buffer = true
 
-			return nil, ack, buffer
+			return nil, ack, buffer, false
 		}
 
-		return this.flush(ctx), ack, true
+		return nil, ack, false, true
 	}
 }
 
 func (this *App) handleUnbulkableRequest(ctx context.Context, requestType string, element action.Element) error {
 	switch requestType {
 	case "update_by_query":
-		return hanldeUpdateByQuery(ctx, this.es, element, requestType)
+		return handleUpdateByQuery(ctx, this.es, element, requestType)
 
 	case "delete_by_query":
-		return hanldeDeleteByQuery(ctx, this.es, element, requestType)
+		return handleDeleteByQuery(ctx, this.es, element, requestType)
 
 	case "indices_create":
 		return handleIndicesCreate(ctx, this.es, element)

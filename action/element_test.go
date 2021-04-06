@@ -16,7 +16,7 @@ func fileGetContent(filePath string) []byte {
 	return body
 }
 
-func TestBulkCommandBuiler(t *testing.T) {
+func TestBulkCommandBuilder(t *testing.T) {
 	e, err := NewElement(fileGetContent("portal/portal-index.json"))
 	if err != nil {
 		t.Fatalf("failed to create element: %s.", err.Error())
