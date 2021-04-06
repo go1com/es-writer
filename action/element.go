@@ -136,8 +136,7 @@ func (e *Element) IndicesDeleteService(client *elastic.Client) (*elastic.Indices
 }
 
 func (e *Element) UpdateByQueryService(client *elastic.Client) (*elastic.UpdateByQueryService, error) {
-	service := client.UpdateByQuery(e.Index)
-	service.
+	service := client.UpdateByQuery().
 		Index(e.Index).
 		Type(e.DocType).
 		WaitForCompletion(true).
