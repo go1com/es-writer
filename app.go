@@ -47,7 +47,6 @@ func (this *App) Run(ctx context.Context, container Container) error {
 
 func (this *App) loop(ctx context.Context, container Container) error {
 	ticker := time.NewTicker(*container.TickInterval)
-	lastHealthChecking := time.Now()
 
 	for {
 		select {
@@ -55,12 +54,6 @@ func (this *App) loop(ctx context.Context, container Container) error {
 			return ctx.Err()
 
 		case <-ticker.C:
-			if time.Since(lastHealthChecking) >= 5*time.Second {
-				lastHealthChecking = time.Now()
-				_, _ = this.es.ClusterHealth().Do(ctx)
-				// Don't really need this for now per we are not using keep-alive connection.
-			}
-
 			if this.buffer.Length() > 0 {
 				bufferMutext.Lock()
 				if err := this.flush(ctx); nil != err {
