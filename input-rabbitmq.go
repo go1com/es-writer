@@ -2,6 +2,7 @@ package es_writer
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -43,26 +44,38 @@ func (this *RabbitMqInput) messages(flags Container) <-chan amqp.Delivery {
 	return messages
 }
 
-func (this *RabbitMqInput) start(ctx context.Context, flags Container, handler PushCallback) error {
-	messages := this.messages(flags)
+func (this *RabbitMqInput) start(ctx context.Context, container Container, handler PushCallback) error {
+	messages := this.messages(container)
 	for {
+		flush := false
+
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 
 		case message := <-messages:
-			err := this.onMessage(ctx, message, handler)
+			var err error
+
+			err, flush = this.onMessage(ctx, message, handler)
 			if nil != err {
+				return err
+			}
+
+		case <-time.After(*container.TickInterval):
+		}
+
+		if flush {
+			if err := this.app.flush(ctx); err != nil {
 				return err
 			}
 		}
 	}
 }
 
-func (this *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handler PushCallback) error {
+func (this *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handler PushCallback) (error, bool) {
 	if m.DeliveryTag == 0 {
 		this.ch.Nack(m.DeliveryTag, false, false)
-		return nil
+		return nil, false
 	}
 
 	// distributed tracing
@@ -83,12 +96,12 @@ func (this *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handl
 	err, ack, buffer, flush := handler(ctx, m.Body)
 	if err != nil {
 		logrus.WithError(err).Errorln("Failed to handle new message: " + string(m.Body))
-		return err
+		return err, false
 	}
 
 	if ack {
 		if err := this.ch.Ack(m.DeliveryTag, false); nil != err {
-			return errors.Wrap(err, "failed ack")
+			return errors.Wrap(err, "failed ack"), false
 		}
 	}
 
@@ -96,11 +109,7 @@ func (this *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handl
 		this.tags = append(this.tags, m.DeliveryTag)
 	}
 
-	if flush {
-		return this.app.flush(ctx)
-	}
-
-	return nil
+	return nil, flush
 }
 
 func (this *RabbitMqInput) onFlush() {
