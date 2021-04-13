@@ -210,11 +210,20 @@ func (this *App) verboseResponse(res *elastic.BulkResponse) {
 	for _, rItem := range res.Items {
 		for riKey, riValue := range rItem {
 			if riValue.Error != nil {
+				relateItems := make([]action.Element, 0, this.buffer.Length())
+
+				for _, item := range this.buffer.Elements() {
+					if item.DocType == riValue.Type && item.DocId == riValue.Id && item.Index == riValue.Index {
+						relateItems = append(relateItems, item)
+					}
+				}
+
 				logrus.
 					WithField("key", riKey).
 					WithField("type", riValue.Error.Type).
 					WithField("phase", riValue.Error.Phase).
 					WithField("reason", riValue.Error.Reason).
+					WithField("relateItems", relateItems).
 					Errorf("failed to process item %s", riKey)
 			}
 		}
