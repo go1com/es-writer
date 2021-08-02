@@ -5,13 +5,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"gopkg.in/olivere/elastic.v5"
 
 	"github.com/go1com/es-writer/action"
 )
 
-func handleUpdateByQuery(ctx context.Context, client *elastic.Client, element action.Element, requestType string) error {
+func (this *App) handleUpdateByQuery(ctx context.Context, client *elastic.Client, element action.Element, requestType string) error {
 	service, err := element.UpdateByQueryService(client)
 	if err != nil {
 		return err
@@ -26,7 +26,11 @@ func handleUpdateByQuery(ctx context.Context, client *elastic.Client, element ac
 		}
 
 		if strings.Contains(err.Error(), "Error 409 (Conflict)") {
-			logrus.WithError(err).WithField("sleep", conflictRetryInterval).Errorf("writing has conflict; try again")
+			this.logger.Error(
+				"conflict on writing doc; trying again",
+				zap.Duration("sleep", conflictRetryInterval),
+			)
+
 			time.Sleep(conflictRetryInterval)
 		}
 	}
@@ -34,7 +38,7 @@ func handleUpdateByQuery(ctx context.Context, client *elastic.Client, element ac
 	return err
 }
 
-func handleDeleteByQuery(ctx context.Context, client *elastic.Client, element action.Element, requestType string) error {
+func (this *App) handleDeleteByQuery(ctx context.Context, client *elastic.Client, element action.Element, requestType string) error {
 	service, err := element.DeleteByQueryService(client)
 	if err != nil {
 		return err
@@ -49,7 +53,7 @@ func handleDeleteByQuery(ctx context.Context, client *elastic.Client, element ac
 		}
 
 		if strings.Contains(err.Error(), "Error 409 (Conflict)") {
-			logrus.WithError(err).Errorf("deleting has conflict; try again in %s.\n", conflictRetryInterval)
+			this.logger.Error("conflict on deleting; try again", zap.Duration("sleep", conflictRetryInterval))
 			time.Sleep(conflictRetryInterval)
 		}
 	}
@@ -73,7 +77,7 @@ func handleIndicesCreate(ctx context.Context, client *elastic.Client, element ac
 	return err
 }
 
-func handleIndicesDelete(ctx context.Context, client *elastic.Client, element action.Element) error {
+func (this *App) handleIndicesDelete(ctx context.Context, client *elastic.Client, element action.Element) error {
 	service, err := element.IndicesDeleteService(client)
 	if err != nil {
 		return err
@@ -82,7 +86,11 @@ func handleIndicesDelete(ctx context.Context, client *elastic.Client, element ac
 	_, err = service.Do(ctx)
 	if err != nil {
 		if strings.Contains(err.Error(), "[type=index_not_found_exception]") {
-			logrus.WithError(err).Infoln("That's ok if the index is not existing, already deleted somewhere.")
+			this.logger.Info(
+				"that's ok if the index is not existing, already deleted somewhere",
+				zap.Error(err),
+			)
+
 			return nil
 		}
 	}
@@ -90,21 +98,22 @@ func handleIndicesDelete(ctx context.Context, client *elastic.Client, element ac
 	return err
 }
 
-func handleIndicesAlias(ctx context.Context, client *elastic.Client, element action.Element) error {
+func (this *App) handleIndicesAlias(ctx context.Context, client *elastic.Client, element action.Element) error {
 	res, err := action.CreateIndiceAlias(ctx, client, element)
+
 	if err != nil {
 		if strings.Contains(err.Error(), "index_not_found_exception") {
-			logrus.WithError(err).Errorln("That's ok if the index is existing.")
+			this.logger.Error("that's ok if the index is existing", zap.Error(err))
 			return nil
 		}
 	}
 
-	logrus.
-		WithError(err).
-		WithField("action", "indices_alias").
-		WithField("res", res).
-		WithField("body", element.String()).
-		Infoln("create")
+	this.logger.Info(
+		"create",
+		zap.String("action", "indices_alias"),
+		zap.String("body", element.String()),
+		zap.Any("res", res),
+	)
 
 	return err
 }

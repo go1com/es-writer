@@ -5,16 +5,17 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
+	"go.uber.org/zap"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 type RabbitMqInput struct {
-	app  *App
-	ch   *amqp.Channel
-	tags []uint64
+	app    *App
+	logger *zap.Logger
+	ch     *amqp.Channel
+	tags   []uint64
 }
 
 func (this *RabbitMqInput) messages(flags Container) <-chan amqp.Delivery {
@@ -28,17 +29,17 @@ func (this *RabbitMqInput) messages(flags Container) <-chan amqp.Delivery {
 
 	queue, err := this.ch.QueueDeclare(*flags.QueueName, false, false, false, false, args)
 	if nil != err {
-		logrus.Panic(err)
+		this.logger.Panic("failed to acquire queue", zap.Error(err))
 	}
 
 	err = this.ch.QueueBind(queue.Name, *flags.RoutingKey, *flags.Exchange, true, nil)
 	if nil != err {
-		logrus.Panic(err)
+		this.logger.Panic("failed to bind queue", zap.Error(err))
 	}
 
 	messages, err := this.ch.Consume(queue.Name, *flags.ConsumerName, false, false, false, true, nil)
 	if nil != err {
-		logrus.Panic(err)
+		this.logger.Panic("failed to getting messages from queue", zap.Error(err))
 	}
 
 	return messages
@@ -96,7 +97,11 @@ func (this *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handl
 
 	err, ack, buffer, flush := handler(ctx, m.Body)
 	if err != nil {
-		logrus.WithError(err).Errorln("Failed to handle new message: " + string(m.Body))
+		this.logger.Error(
+			"failed to handle new message",
+			zap.String("m.body", string(m.Body)),
+		)
+
 		return err, false
 	}
 

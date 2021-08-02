@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/jmespath/go-jmespath"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/olivere/elastic.v5"
 )
 
@@ -77,14 +76,6 @@ func (e Element) Source() ([]string, error) {
 		return []string{string(body)}, nil
 	} else if e.Method == "DELETE" {
 		return []string{NewCommand(e).String("delete")}, nil
-	} else {
-		logrus.
-			WithField("e.Method", e.Method).
-			WithField("e.Uri", e.Uri).
-			WithField("e.Index", e.Index).
-			WithField("e.DocType", e.DocType).
-			WithField("e.Body", fmt.Sprintln(e.Body)).
-			Errorln("unknown request type")
 	}
 
 	return nil, fmt.Errorf("unknown request type")

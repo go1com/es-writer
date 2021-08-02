@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	"gopkg.in/olivere/elastic.v5"
 )
@@ -51,20 +51,20 @@ func container() Container {
 	ctn.EsUrl = &esUrl
 	ctn.Debug = &debug
 	ctn.Refresh = &refresh
-	ctn.Logger = logrus.StandardLogger()
+	ctn.logger = zap.NewNop()
 
 	return ctn
 }
 
-func idle(w *App) {
+func idle(app *App) {
 	for {
-		units := w.buffer.Length()
+		units := app.buffer.Length()
 		if 0 == units {
 			time.Sleep(3333 * time.Millisecond)
 			break
 		} else {
 			time.Sleep(333 * time.Millisecond)
-			logrus.Infof("Remaining buffer: %d\n", units)
+			app.logger.Info("idle", zap.Int("units", units))
 		}
 	}
 }
@@ -74,7 +74,7 @@ func queue(ch *amqp.Channel, ctn Container, file string) {
 	err := ch.Publish(*ctn.Exchange, *ctn.RoutingKey, false, false, msg)
 
 	if err != nil {
-		logrus.WithError(err).Panicln("failed to publish message")
+		ctn.logger.Panic("failed to publish message", zap.Error(err))
 	}
 }
 

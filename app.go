@@ -9,14 +9,15 @@ import (
 
 	"github.com/go1com/es-writer/action"
 
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"gopkg.in/olivere/elastic.v5"
 )
 
 type PushCallback func(context.Context, []byte) (err error, ack bool, buff bool, flush bool)
 
 type App struct {
-	debug bool
+	debug  bool
+	logger *zap.Logger
 
 	// RabbitMQ
 	rabbit *RabbitMqInput
@@ -42,7 +43,6 @@ func (this *App) Run(ctx context.Context, container Container) error {
 
 	return this.rabbit.start(ctx, container, handler)
 }
-
 
 func (this *App) push() PushCallback {
 	return func(ctx context.Context, body []byte) (error, bool, bool, bool) {
@@ -103,19 +103,19 @@ func (this *App) push() PushCallback {
 func (this *App) handleUnbulkableRequest(ctx context.Context, requestType string, element action.Element) error {
 	switch requestType {
 	case "update_by_query":
-		return handleUpdateByQuery(ctx, this.es, element, requestType)
+		return this.handleUpdateByQuery(ctx, this.es, element, requestType)
 
 	case "delete_by_query":
-		return handleDeleteByQuery(ctx, this.es, element, requestType)
+		return this.handleDeleteByQuery(ctx, this.es, element, requestType)
 
 	case "indices_create":
 		return handleIndicesCreate(ctx, this.es, element)
 
 	case "indices_delete":
-		return handleIndicesDelete(ctx, this.es, element)
+		return this.handleIndicesDelete(ctx, this.es, element)
 
 	case "indices_alias":
-		return handleIndicesAlias(ctx, this.es, element)
+		return this.handleIndicesAlias(ctx, this.es, element)
 
 	default:
 		return fmt.Errorf("unsupported request type: %s", requestType)
@@ -162,15 +162,12 @@ func (this *App) flush(ctx context.Context) error {
 
 func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) error {
 	for _, retry := range retriesInterval {
-		logrus.Debugln("Flushing")
+		this.logger.Debug("Flushing")
 		res, err := bulk.Do(ctx)
 
 		if err != nil {
 			if this.isErrorRetriable(err) {
-				logrus.
-					WithField("time", retry).
-					Infoln("Sleep")
-
+				this.logger.Info("Sleep", zap.Duration("time", retry))
 				time.Sleep(retry)
 				continue
 			} else {
@@ -200,7 +197,7 @@ func (this *App) isErrorRetriable(err error) bool {
 	}
 
 	if retriable {
-		logrus.WithError(err).Warningln("failed flushing")
+		this.logger.Warn("failed flushing", zap.Error(err))
 	}
 
 	return retriable
@@ -218,20 +215,23 @@ func (this *App) verboseResponse(res *elastic.BulkResponse) {
 					}
 				}
 
-				logrus.
-					WithField("key", riKey).
-					WithField("type", riValue.Error.Type).
-					WithField("phase", riValue.Error.Phase).
-					WithField("reason", riValue.Error.Reason).
-					WithField("relateItems", relateItems).
-					Errorf("failed to process item %s", riKey)
+				this.logger.Error(
+					"failed to process item",
+					zap.String("key", riKey),
+					zap.String("type", riValue.Error.Type),
+					zap.String("phase", riValue.Error.Phase),
+					zap.String("reason", riValue.Error.Reason),
+					// zap.String("relateItems", relateItems),
+				)
+
 			}
 		}
 	}
 
-	logrus.
-		WithField("res.took", res.Took).
-		WithField("res.items", len(res.Items)).
-		WithField("res.errors", res.Errors).
-		Debugln("bulk done")
+	this.logger.Info(
+		"bulk done",
+		zap.Int("res.took", res.Took),
+		zap.Int("res.items", len(res.Items)),
+		zap.Bool("res.errors", res.Errors),
+	)
 }

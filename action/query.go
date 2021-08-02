@@ -3,8 +3,9 @@ package action
 import (
 	"context"
 	"encoding/json"
-	"gopkg.in/olivere/elastic.v5"
 	"net/url"
+
+	"gopkg.in/olivere/elastic.v5"
 )
 
 type SimpleQuery struct {
@@ -60,8 +61,11 @@ func (cmd Command) String(key string) string {
 }
 
 func CreateIndiceAlias(ctx context.Context, client *elastic.Client, element Element) (*elastic.AliasResult, error) {
-	// res, err := s.client.PerformRequest(ctx, "POST", path, params, body)
 	body, err := element.Source()
+	if nil != err {
+		return nil, err
+	}
+
 	res, err := client.PerformRequest(ctx, element.Method, element.Uri, url.Values{}, body[0])
 	if err != nil {
 		return nil, err

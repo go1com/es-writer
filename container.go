@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
+	"go.uber.org/zap"
 
 	"gopkg.in/olivere/elastic.v5"
 	"gopkg.in/olivere/elastic.v5/config"
@@ -47,7 +47,7 @@ type Container struct {
 	Debug                *bool
 	Refresh              *string
 	DataDog              DataDogConfig
-	Logger               *logrus.Logger
+	logger               *zap.Logger
 	Stop                 chan bool
 	SingleActiveConsumer *bool
 	BulkTimeoutString    *string
@@ -70,29 +70,30 @@ func env(key string, defaultValue string) string {
 	return value
 }
 
-func NewContainer() Container {
+func NewContainer(logger *zap.Logger) Container {
 	var (
 		duration       = env("DURATION", "5")
 		iDuration, err = strconv.ParseInt(duration, 10, 64)
 	)
+
 	if err != nil {
-		logrus.WithError(err).Panicln("Duration is invalid.")
+		logger.Panic("invalid duration", zap.Error(err))
 	}
 
 	prefetchCount := env("RABBITMQ_PREFETCH_COUNT", "50")
 	iPrefetchCount, err := strconv.Atoi(prefetchCount)
 	if err != nil {
-		logrus.WithError(err).Panicln("prefetch-count is invalid.")
+		logger.Panic("invalid prefetch-count", zap.Error(err))
 	}
 
 	singleActiveConsumer, err := strconv.ParseBool(env("SINGLE_ACTIVE_CONSUMER", "false"))
 	if err != nil {
-		logrus.WithError(err).Panicln("single-active-consumer is invalid.")
+		logger.Panic("invalid single-active-consumer", zap.Error(err))
 	}
 
 	debug, err := strconv.ParseBool(env("DEBUG", "false"))
 	if err != nil {
-		logrus.WithError(err).Panicln("debug is invalid.")
+		logger.Panic("invalid debug value", zap.Error(err))
 	}
 
 	ctn := Container{}
@@ -112,7 +113,7 @@ func NewContainer() Container {
 	ctn.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
 	ctn.Refresh = flag.String("refresh", env("ES_REFRESH", "true"), "")
 	ctn.SingleActiveConsumer = flag.Bool("single-active-consumer", singleActiveConsumer, "")
-	ctn.Logger = logrus.StandardLogger()
+	ctn.logger = logger
 	bulkTimeout := env("BULK_TIMEOUT", "2m")
 	ctn.BulkTimeoutString = flag.String("bulk-timeout", bulkTimeout, "")
 
@@ -144,7 +145,7 @@ func (this *Container) queueConnection() (*amqp.Connection, error) {
 		select {
 		case err := <-conCloseChan:
 			if err != nil {
-				logrus.WithError(err).Panicln("RabbitMQ connection error.")
+				this.logger.Panic("RabbitMQ connection error", zap.Error(err))
 			}
 		}
 	}()
@@ -188,9 +189,9 @@ func (this *Container) queueChannel(con *amqp.Connection) (*amqp.Channel, error)
 		select {
 		case err := <-chCloseChan:
 			if err != nil {
-				this.Logger.WithError(err).Errorln("RabbitMQ channel error.")
+				this.logger.Error("rabbitMQ channel error", zap.Error(err))
 			} else {
-				this.Logger.Errorln("RabbitMQ channel has been closed.")
+				this.logger.Error("rabbitmq channel has been closed")
 			}
 			this.Stop <- true
 		}
@@ -203,7 +204,7 @@ func (this *Container) elasticSearchClient() (*elastic.Client, error) {
 	cfg, err := config.Parse(*this.EsUrl)
 
 	if err != nil {
-		logrus.Fatalf("failed to parse URL: %s", err.Error())
+		this.logger.Panic("failed to parse URL", zap.Error(err))
 
 		return nil, err
 	}
@@ -253,10 +254,12 @@ func (this *Container) App() (*App, error, chan bool) {
 	}
 
 	app := &App{
-		debug: *this.Debug,
+		debug:  *this.Debug,
+		logger: this.logger,
 		rabbit: &RabbitMqInput{
-			ch:   ch,
-			tags: []uint64{},
+			ch:     ch,
+			tags:   []uint64{},
+			logger: this.logger,
 		},
 		buffer:            action.NewContainer(),
 		mutex:             &sync.Mutex{},
