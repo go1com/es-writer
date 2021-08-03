@@ -21,7 +21,7 @@ func Test_HeaderToTextMapCarrier(t *testing.T) {
 	}
 
 	ass := assert.New(t)
-	carrier := HeaderToTextMapCarrier(headers)
+	carrier := headerToTextMapCarrier(headers)
 	spanCtx, err := tracer.Extract(carrier)
 
 	ass.NoError(err)
