@@ -121,10 +121,12 @@ func NewContainer(logger *zap.Logger) Container {
 	flag.Parse()
 
 	if host := env("DD_AGENT_HOST", ""); host != "" {
+		serviceName := flag.String("name", env("SERVICE_NAME", "es-writer"), "")
+
 		ctn.DataDog = DataDogConfig{
 			Host:        host,
 			Port:        env("DD_AGENT_PORT", "8126"),
-			ServiceName: "es-writer",
+			ServiceName: *serviceName,
 			Env:         env("ENVIRONMENT", "dev"),
 		}
 	}
@@ -255,8 +257,9 @@ func (this *Container) App() (*App, error, chan bool) {
 	}
 
 	app := &App{
-		debug:  *this.Debug,
-		logger: this.logger,
+		serviceName: this.DataDog.ServiceName,
+		debug:       *this.Debug,
+		logger:      this.logger,
 		rabbit: &RabbitMqInput{
 			ch:     ch,
 			tags:   []uint64{},

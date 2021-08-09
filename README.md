@@ -34,6 +34,7 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
 ### Consuming
 
     /path/to/es-writer
+        -serviceName     SERVICE_NAME<STRING=es-writer>
         -url             RABBITMQ_URL<STRING=amqp://go1:go1@127.0.0.1:5672/>
         -kind            RABBITMQ_KIND<STRING=topic>
         -exchange        RABBITMQ_EXCHANGE<STRING=events>

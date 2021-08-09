@@ -27,6 +27,7 @@ func main() {
 		logger = logger.WithOptions(zap.IncreaseLevel(zap.DebugLevel))
 
 		logger.Info("starting es-writer",
+			zap.String("service", ctn.DataDog.ServiceName),
 			zap.String("rabbitmq.url", *ctn.Url),
 			zap.String("rabbitmq.kind", *ctn.Kind),
 			zap.String("rabbitmq.exchange", *ctn.Exchange),
