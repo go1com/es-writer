@@ -166,7 +166,7 @@ func TestBulk(t *testing.T) {
 				tags := span.Tags()
 				ass.Equal("qa", tags["message.routingKey"])
 			}
-			
+
 			ass.Equal(2, len(spans))
 		})
 

@@ -19,8 +19,9 @@ import (
 type PushCallback func(context.Context, amqp.Delivery) (err error, ack bool, buff bool, flush bool)
 
 type App struct {
-	debug  bool
-	logger *zap.Logger
+	serviceName string
+	debug       bool
+	logger      *zap.Logger
 
 	// RabbitMQ
 	rabbit *RabbitMqInput
@@ -51,7 +52,7 @@ func (this *App) Run(ctx context.Context, container Container) error {
 func (this *App) push() PushCallback {
 	return func(ctx context.Context, m amqp.Delivery) (error, bool, bool, bool) {
 		spanOpts := []ddtrace.StartSpanOption{
-			tracer.ServiceName("es-writer"),
+			tracer.ServiceName(this.serviceName),
 			tracer.SpanType("rabbitmq-consumer"),
 			tracer.ResourceName("consumer"),
 			tracer.Tag("message.routingKey", m.RoutingKey),
