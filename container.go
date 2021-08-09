@@ -10,6 +10,7 @@ import (
 
 	"github.com/streadway/amqp"
 	"go.uber.org/zap"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"gopkg.in/olivere/elastic.v5"
 	"gopkg.in/olivere/elastic.v5/config"
@@ -272,6 +273,7 @@ func (this *Container) App() (*App, error, chan bool) {
 		refresh:           *this.Refresh,
 		isFlushing:        false,
 		isFlushingRWMutex: &sync.RWMutex{},
+		spans:             []tracer.Span{},
 	}
 
 	app.rabbit.app = app

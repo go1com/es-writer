@@ -15,6 +15,7 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/mocktracer"
 
 	"gopkg.in/olivere/elastic.v5"
 )
@@ -151,6 +152,24 @@ func TestBulk(t *testing.T) {
 	})
 
 	t.Run("bulk", func(t *testing.T) {
+		t.Run("trace", func(t *testing.T) {
+			mt := mocktracer.Start()
+			defer mt.Stop()
+
+			purge()
+			queue(app.rabbit.ch, ctn, "indices/indices-create.json") // create the index
+			queue(app.rabbit.ch, ctn, "portal/portal-index.json")    // create portal object
+			idle(app)                                                // Wait a bit so that the message can be consumed.
+
+			spans := mt.FinishedSpans()
+			for _, span := range spans {
+				tags := span.Tags()
+				ass.Equal("qa", tags["message.routingKey"])
+			}
+			
+			ass.Equal(2, len(spans))
+		})
+
 		t.Run("create", func(t *testing.T) {
 			purge()
 			queue(app.rabbit.ch, ctn, "indices/indices-create.json") // create the index

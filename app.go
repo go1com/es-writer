@@ -8,12 +8,15 @@ import (
 	"time"
 
 	"github.com/go1com/es-writer/action"
+	"github.com/streadway/amqp"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"go.uber.org/zap"
 	"gopkg.in/olivere/elastic.v5"
 )
 
-type PushCallback func(context.Context, []byte) (err error, ack bool, buff bool, flush bool)
+type PushCallback func(context.Context, amqp.Delivery) (err error, ack bool, buff bool, flush bool)
 
 type App struct {
 	debug  bool
@@ -36,6 +39,7 @@ type App struct {
 	refresh           string
 	isFlushing        bool
 	isFlushingRWMutex *sync.RWMutex
+	spans             []tracer.Span
 }
 
 func (this *App) Run(ctx context.Context, container Container) error {
@@ -45,18 +49,34 @@ func (this *App) Run(ctx context.Context, container Container) error {
 }
 
 func (this *App) push() PushCallback {
-	return func(ctx context.Context, body []byte) (error, bool, bool, bool) {
+	return func(ctx context.Context, m amqp.Delivery) (error, bool, bool, bool) {
+		spanOpts := []ddtrace.StartSpanOption{
+			tracer.ServiceName("es-writer"),
+			tracer.SpanType("rabbitmq-consumer"),
+			tracer.ResourceName("consumer"),
+			tracer.Tag("message.routingKey", m.RoutingKey),
+		}
+
+		defer func() {
+			span := tracer.StartSpan("consumer.forwarding", spanOpts...)
+			this.spans = append(this.spans, span)
+		}()
+
 		ack := false
 		buffer := false
-		element, err := action.NewElement(body)
+		element, err := action.NewElement(m.Body)
 
 		if err != nil {
+			tracer.Tag("error", err.Error())
+
 			return err, false, false, false
 		}
 
 		// message filtering: Don't process if not contains expecting text.
 		if "" != this.urlContains {
 			if !strings.Contains(element.Uri, this.urlContains) {
+				tracer.Tag("skipped", true)
+
 				return nil, true, false, false
 			}
 		}
@@ -64,6 +84,8 @@ func (this *App) push() PushCallback {
 		// message filtering: Don't process if contains unexpecting text.
 		if "" != this.urlNotContains {
 			if strings.Contains(element.Uri, this.urlNotContains) {
+				spanOpts = append(spanOpts, tracer.Tag("skipped", true))
+
 				return nil, true, false, false
 			}
 		}
@@ -71,6 +93,8 @@ func (this *App) push() PushCallback {
 		// Not all requests are bulkable
 		requestType := element.RequestType()
 		if "bulkable" != requestType {
+			spanOpts = append(spanOpts, tracer.Tag("bulkable", false))
+
 			if this.buffer.Length() > 0 {
 				// before perform unbulkable action, we need flushing the buffer first.
 				if err := this.flush(ctx); nil != err {
@@ -86,6 +110,25 @@ func (this *App) push() PushCallback {
 			ack = err == nil
 
 			return err, ack, buffer, false
+		} else {
+			spanOpts = append(spanOpts, tracer.Tag("bulkable", true))
+			spanOpts = append(spanOpts, tracer.Tag("uri", element.Uri))
+			spanOpts = append(spanOpts, tracer.Tag("routing", element.Routing))
+			spanOpts = append(spanOpts, tracer.Tag("parent", element.Parent))
+			spanOpts = append(spanOpts, tracer.Tag("refresh", element.Refresh))
+			spanOpts = append(spanOpts, tracer.Tag("waitForCompletion", element.WaitForCompletion))
+			spanOpts = append(spanOpts, tracer.Tag("conflict", element.Conflict))
+			spanOpts = append(spanOpts, tracer.Tag("versionType", element.VersionType))
+			spanOpts = append(spanOpts, tracer.Tag("version", element.Version))
+			spanOpts = append(spanOpts, tracer.Tag("method", element.Method))
+			spanOpts = append(spanOpts, tracer.Tag("index", element.Index))
+			spanOpts = append(spanOpts, tracer.Tag("docType", element.DocType))
+			spanOpts = append(spanOpts, tracer.Tag("docId", element.DocId))
+
+			carrier := headerToTextMapCarrier(m.Headers)
+			if spanCtx, err := tracer.Extract(carrier); err == nil {
+				spanOpts = append(spanOpts, tracer.ChildOf(spanCtx))
+			}
 		}
 
 		this.buffer.Add(element)
@@ -156,6 +199,13 @@ func (this *App) flush(ctx context.Context) error {
 
 	this.buffer.Clear()
 	this.rabbit.onFlush()
+
+	// reset tracing spans
+	for _, span := range this.spans {
+		span.Finish()
+	}
+
+	this.spans = []tracer.Span{}
 
 	return nil
 }

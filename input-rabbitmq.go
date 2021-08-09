@@ -7,8 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 	"go.uber.org/zap"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 type RabbitMqInput struct {
@@ -48,6 +46,7 @@ func (this *RabbitMqInput) messages(flags Container) <-chan amqp.Delivery {
 func (this *RabbitMqInput) start(ctx context.Context, container Container, handler PushCallback) error {
 	messages := this.messages(container)
 	for {
+		var err error
 		flush := false
 
 		select {
@@ -55,10 +54,7 @@ func (this *RabbitMqInput) start(ctx context.Context, container Container, handl
 			return ctx.Err()
 
 		case message := <-messages:
-			var err error
-
-			err, flush = this.onMessage(ctx, message, handler)
-			if nil != err {
+			if err, flush = this.onMessage(ctx, message, handler); nil != err {
 				return err
 			}
 
@@ -76,29 +72,20 @@ func (this *RabbitMqInput) start(ctx context.Context, container Container, handl
 
 func (this *RabbitMqInput) onMessage(ctx context.Context, m amqp.Delivery, handler PushCallback) (error, bool) {
 	if m.DeliveryTag == 0 {
-		this.ch.Nack(m.DeliveryTag, false, false)
+		err := this.ch.Nack(m.DeliveryTag, false, false)
+
+		if nil != err {
+			this.logger.Error("failed nack", zap.Error(err))
+		}
+
 		return nil, false
 	}
 
-	// distributed tracing
-	carrier := HeaderToTextMapCarrier(m.Headers)
-	if spanCtx, err := tracer.Extract(carrier); err == nil {
-		opts := []ddtrace.StartSpanOption{
-			tracer.ServiceName("es-writer"),
-			tracer.SpanType("rabbitmq-consumer"),
-			tracer.ResourceName("consumer"),
-			tracer.Tag("message.routingKey", m.RoutingKey),
-			tracer.ChildOf(spanCtx),
-		}
-
-		span := tracer.StartSpan("consumer.forwarding", opts...)
-		defer span.Finish()
-	}
-
-	err, ack, buffer, flush := handler(ctx, m.Body)
+	err, ack, buffer, flush := handler(ctx, m)
 	if err != nil {
 		this.logger.Error(
 			"failed to handle new message",
+			zap.String("m.routingKey", string(m.RoutingKey)),
 			zap.String("m.body", string(m.Body)),
 		)
 
