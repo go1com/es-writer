@@ -127,7 +127,12 @@ func NewContainer(logger *zap.Logger) Container {
 			Host:        host,
 			Port:        env("DD_AGENT_PORT", "8126"),
 			ServiceName: *serviceName,
-			Env:         env("ENVIRONMENT", "dev"),
+			Env:         env("DD_ENV", "dev"),
+		}
+
+		if ctn.DataDog.Env == "dev" {
+			// legacy config
+			ctn.DataDog.Env = env("ENVIRONMENT", "dev")
 		}
 	}
 
