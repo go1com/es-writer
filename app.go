@@ -274,7 +274,6 @@ func (this *App) verboseResponse(res *elastic.BulkResponse) {
 					zap.String("reason", riValue.Error.Reason),
 					// zap.String("relateItems", relateItems),
 				)
-
 			}
 		}
 	}

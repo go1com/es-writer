@@ -48,7 +48,7 @@ type Container struct {
 	Debug                *bool
 	Refresh              *string
 	DataDog              DataDogConfig
-	logger               *zap.Logger
+	Logger               *zap.Logger
 	Stop                 chan bool
 	SingleActiveConsumer *bool
 	BulkTimeoutString    *string
@@ -71,11 +71,24 @@ func env(key string, defaultValue string) string {
 	return value
 }
 
-func NewContainer(logger *zap.Logger) Container {
+func NewContainer() Container {
 	var (
 		duration       = env("DURATION", "5")
 		iDuration, err = strconv.ParseInt(duration, 10, 64)
 	)
+
+	logger, err := zap.NewProduction()
+	if nil != err {
+		panic("failed to create logger: " + err.Error())
+	}
+
+	// If debug on -> change logger engine to support debug.
+	debug, err := strconv.ParseBool(env("DEBUG", "false"))
+	if err != nil {
+		logger.Panic("invalid debug value", zap.Error(err))
+	} else if debug {
+		logger, _ = zap.NewDevelopment()
+	}
 
 	if err != nil {
 		logger.Panic("invalid duration", zap.Error(err))
@@ -90,11 +103,6 @@ func NewContainer(logger *zap.Logger) Container {
 	singleActiveConsumer, err := strconv.ParseBool(env("SINGLE_ACTIVE_CONSUMER", "false"))
 	if err != nil {
 		logger.Panic("invalid single-active-consumer", zap.Error(err))
-	}
-
-	debug, err := strconv.ParseBool(env("DEBUG", "false"))
-	if err != nil {
-		logger.Panic("invalid debug value", zap.Error(err))
 	}
 
 	ctn := Container{}
@@ -114,7 +122,7 @@ func NewContainer(logger *zap.Logger) Container {
 	ctn.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
 	ctn.Refresh = flag.String("refresh", env("ES_REFRESH", "true"), "")
 	ctn.SingleActiveConsumer = flag.Bool("single-active-consumer", singleActiveConsumer, "")
-	ctn.logger = logger
+	ctn.Logger = logger
 	bulkTimeout := env("BULK_TIMEOUT", "2m")
 	ctn.BulkTimeoutString = flag.String("bulk-timeout", bulkTimeout, "")
 
@@ -153,7 +161,7 @@ func (this *Container) queueConnection() (*amqp.Connection, error) {
 		select {
 		case err := <-conCloseChan:
 			if err != nil {
-				this.logger.Panic("RabbitMQ connection error", zap.Error(err))
+				this.Logger.Panic("RabbitMQ connection error", zap.Error(err))
 			}
 		}
 	}()
@@ -197,9 +205,9 @@ func (this *Container) queueChannel(con *amqp.Connection) (*amqp.Channel, error)
 		select {
 		case err := <-chCloseChan:
 			if err != nil {
-				this.logger.Error("rabbitMQ channel error", zap.Error(err))
+				this.Logger.Error("rabbitMQ channel error", zap.Error(err))
 			} else {
-				this.logger.Error("rabbitmq channel has been closed")
+				this.Logger.Error("rabbitmq channel has been closed")
 			}
 			this.Stop <- true
 		}
@@ -212,7 +220,7 @@ func (this *Container) elasticSearchClient() (*elastic.Client, error) {
 	cfg, err := config.Parse(*this.EsUrl)
 
 	if err != nil {
-		this.logger.Panic("failed to parse URL", zap.Error(err))
+		this.Logger.Panic("failed to parse URL", zap.Error(err))
 
 		return nil, err
 	}
@@ -264,11 +272,11 @@ func (this *Container) App() (*App, error, chan bool) {
 	app := &App{
 		serviceName: this.DataDog.ServiceName,
 		debug:       *this.Debug,
-		logger:      this.logger,
+		logger:      this.Logger,
 		rabbit: &RabbitMqInput{
 			ch:     ch,
 			tags:   []uint64{},
-			logger: this.logger,
+			logger: this.Logger,
 		},
 		buffer:            action.NewContainer(),
 		mutex:             &sync.Mutex{},

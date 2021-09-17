@@ -52,7 +52,7 @@ func container() Container {
 	ctn.EsUrl = &esUrl
 	ctn.Debug = &debug
 	ctn.Refresh = &refresh
-	ctn.logger = zap.NewNop()
+	ctn.Logger = zap.NewNop()
 
 	return ctn
 }
@@ -75,7 +75,7 @@ func queue(ch *amqp.Channel, ctn Container, file string) {
 	err := ch.Publish(*ctn.Exchange, *ctn.RoutingKey, false, false, msg)
 
 	if err != nil {
-		ctn.logger.Panic("failed to publish message", zap.Error(err))
+		ctn.Logger.Panic("failed to publish message", zap.Error(err))
 	}
 }
 

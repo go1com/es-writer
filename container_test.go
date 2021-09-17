@@ -11,7 +11,7 @@ import (
 func Test_ExitWhenChannelClosed(t *testing.T) {
 	ctn := container()
 	ctn.Stop = make(chan bool)
-	ctn.logger = zap.NewNop()
+	ctn.Logger = zap.NewNop()
 	con, err := ctn.queueConnection()
 	assert.NoError(t, err)
 
