@@ -54,6 +54,11 @@ func (this *App) push() PushCallback {
 			return err, false, false, false
 		}
 
+		// Ignore all message from this portal for now
+		if element.Routing == "2256232" {
+			return nil, true, false, false
+		}
+
 		// message filtering: Don't process if not contains expecting text.
 		if "" != this.urlContains {
 			if !strings.Contains(element.Uri, this.urlContains) {
