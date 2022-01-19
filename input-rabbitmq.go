@@ -55,7 +55,7 @@ func (this *RabbitMqInput) start(ctx context.Context, container Container, handl
 
 		case message := <-messages:
 			if err, flush = this.onMessage(ctx, message, handler); nil != err {
-				return err
+				return errors.Wrap(err, "failed handling message")
 			}
 
 		case <-time.After(*container.TickInterval):
@@ -64,7 +64,7 @@ func (this *RabbitMqInput) start(ctx context.Context, container Container, handl
 
 		if flush {
 			if err := this.app.flush(ctx); err != nil {
-				return err
+				return errors.Wrap(err, "failed flushing messages")
 			}
 		}
 	}
