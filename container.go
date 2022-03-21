@@ -38,6 +38,7 @@ type Container struct {
 	RoutingKey           *string
 	PrefetchCount        *int
 	PrefetchSize         *int
+	ThreadCount          *int
 	TickInterval         *time.Duration
 	QueueName            *string
 	UrlContain           *string
@@ -87,6 +88,12 @@ func NewContainer(logger *zap.Logger) Container {
 		logger.Panic("invalid prefetch-count", zap.Error(err))
 	}
 
+	threadCount := env("THREAD_COUNT", "1")
+	iThreadCount, err := strconv.Atoi(threadCount)
+	if err != nil {
+		logger.Panic("invalid thread-count", zap.Error(err))
+	}
+
 	singleActiveConsumer, err := strconv.ParseBool(env("SINGLE_ACTIVE_CONSUMER", "false"))
 	if err != nil {
 		logger.Panic("invalid single-active-consumer", zap.Error(err))
@@ -104,6 +111,7 @@ func NewContainer(logger *zap.Logger) Container {
 	ctn.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "es.writer.go1"), "")
 	ctn.PrefetchCount = flag.Int("prefetch-count", iPrefetchCount, "")
 	ctn.PrefetchSize = flag.Int("prefetch-size", 0, "")
+	ctn.ThreadCount = flag.Int("thread-count", iThreadCount, "")
 	ctn.TickInterval = flag.Duration("tick-iterval", time.Duration(iDuration)*time.Second, "")
 	ctn.QueueName = flag.String("queue-name", env("RABBITMQ_QUEUE_NAME", "es-writer"), "")
 	ctn.UrlContain = flag.String("url-contains", env("URL_CONTAINS", ""), "")
@@ -261,6 +269,12 @@ func (this *Container) App() (*App, error, chan bool) {
 		}
 	}
 
+	var containers []*action.Container = make([]*action.Container, *this.ThreadCount)
+
+	for i := 0; i < len(containers); i++ {
+		containers[i] = action.NewContainer()
+	}
+
 	app := &App{
 		serviceName: this.DataDog.ServiceName,
 		debug:       *this.Debug,
@@ -270,7 +284,7 @@ func (this *Container) App() (*App, error, chan bool) {
 			tags:   []uint64{},
 			logger: this.logger,
 		},
-		buffer:            action.NewContainer(),
+		buffers:           containers,
 		mutex:             &sync.Mutex{},
 		count:             *this.PrefetchCount,
 		urlContains:       *this.UrlContain,

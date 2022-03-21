@@ -24,10 +24,10 @@ type App struct {
 	logger      *zap.Logger
 
 	// RabbitMQ
-	rabbit *RabbitMqInput
-	buffer *action.Container
-	mutex  *sync.Mutex
-	count  int
+	rabbit  *RabbitMqInput
+	buffers []*action.Container
+	mutex   *sync.Mutex
+	count   int
 
 	// message filtering
 	urlContains    string
@@ -96,7 +96,7 @@ func (this *App) push() PushCallback {
 		if "bulkable" != requestType {
 			spanOpts = append(spanOpts, tracer.Tag("bulkable", false))
 
-			if this.buffer.Length() > 0 {
+			if AnyNotEmpty(this.buffers) {
 				// before perform unbulkable action, we need flushing the buffer first.
 				if err := this.flush(ctx); nil != err {
 					// failed flushing, can't execute unbulkable action yet.
@@ -132,9 +132,11 @@ func (this *App) push() PushCallback {
 			}
 		}
 
-		this.buffer.Add(element)
+		id := GetDocumentIdFromElement(&element)
+		i := GetBufferIndexFromId(id, len(this.buffers))
+		this.buffers[i].Add(element)
 
-		if this.buffer.Length() < this.count {
+		if TotalElements(this.buffers) < this.count {
 			buffer = true
 
 			return nil, ack, buffer, false
@@ -166,6 +168,28 @@ func (this *App) handleUnbulkableRequest(ctx context.Context, requestType string
 	}
 }
 
+func (this *App) WriteToEs(buffer *action.Container, ctx context.Context) error {
+	var cancel context.CancelFunc
+
+	bulk := this.es.Bulk().Refresh(this.refresh)
+	for _, element := range buffer.Elements() {
+		bulk.Add(element)
+	}
+
+	if this.bulkTimeoutString != "" {
+		bulk.Timeout(this.bulkTimeoutString)
+		ctx, cancel = context.WithTimeout(ctx, this.bulkTimeout)
+		defer cancel()
+	}
+
+	if err := this.doFlush(ctx, bulk, buffer); nil != err {
+		return err
+	}
+
+	buffer.Clear()
+	return nil
+}
+
 func (this *App) flush(ctx context.Context) error {
 	this.mutex.Lock()
 	this.isFlushingRWMutex.Lock()
@@ -177,28 +201,26 @@ func (this *App) flush(ctx context.Context) error {
 		this.isFlushingRWMutex.Unlock()
 	}()
 
-	if this.buffer.Length() == 0 {
+	if !AnyNotEmpty(this.buffers) {
 		return nil
 	}
 
-	var cancel context.CancelFunc
+	acks := make(chan int)
 
-	bulk := this.es.Bulk().Refresh(this.refresh)
-	for _, element := range this.buffer.Elements() {
-		bulk.Add(element)
+	for i, buffer := range this.buffers {
+		go func(i int, buf *action.Container) {
+			err := this.WriteToEs(buf, ctx)
+			if err != nil {
+				this.logger.Error(err.Error())
+			}
+			acks <- i
+		}(i, buffer)
 	}
 
-	if this.bulkTimeoutString != "" {
-		bulk.Timeout(this.bulkTimeoutString)
-		ctx, cancel = context.WithTimeout(ctx, this.bulkTimeout)
-		defer cancel()
+	for i := 0; i < len(this.buffers); i++ {
+		<-acks
 	}
 
-	if err := this.doFlush(ctx, bulk); nil != err {
-		return err
-	}
-
-	this.buffer.Clear()
 	this.rabbit.onFlush()
 
 	// reset tracing spans
@@ -211,7 +233,7 @@ func (this *App) flush(ctx context.Context) error {
 	return nil
 }
 
-func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) error {
+func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService, buffer *action.Container) error {
 	for _, retry := range retriesInterval {
 		this.logger.Debug("Flushing")
 		res, err := bulk.Do(ctx)
@@ -226,7 +248,7 @@ func (this *App) doFlush(ctx context.Context, bulk *elastic.BulkService) error {
 			}
 		}
 
-		this.verboseResponse(res)
+		this.verboseResponse(res, buffer)
 
 		break
 	}
@@ -254,13 +276,13 @@ func (this *App) isErrorRetriable(err error) bool {
 	return retriable
 }
 
-func (this *App) verboseResponse(res *elastic.BulkResponse) {
+func (this *App) verboseResponse(res *elastic.BulkResponse, buffer *action.Container) {
 	for _, rItem := range res.Items {
 		for riKey, riValue := range rItem {
 			if riValue.Error != nil {
-				relateItems := make([]action.Element, 0, this.buffer.Length())
+				relateItems := make([]action.Element, 0, buffer.Length())
 
-				for _, item := range this.buffer.Elements() {
+				for _, item := range buffer.Elements() {
 					if item.DocType == riValue.Type && item.DocId == riValue.Id && item.Index == riValue.Index {
 						relateItems = append(relateItems, item)
 					}

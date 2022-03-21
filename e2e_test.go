@@ -59,7 +59,7 @@ func container() Container {
 
 func idle(app *App) {
 	for {
-		units := app.buffer.Length()
+		units := TotalElements(app.buffers)
 		if 0 == units {
 			time.Sleep(3333 * time.Millisecond)
 			break
