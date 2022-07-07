@@ -1,4 +1,4 @@
-Elastic Search writer [![Build Status](https://travis-ci.org/go1com/es-writer.svg?branch=master)](https://travis-ci.org/go1com/es-writer)
+Elastic Search writer
 ====
 
 ## Problems
