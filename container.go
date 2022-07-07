@@ -112,7 +112,7 @@ func NewContainer(logger *zap.Logger) Container {
 	ctn.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
 	ctn.Debug = flag.Bool("debug", debug, "Enable with care; credentials can be leaked if this is on.")
 	ctn.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
-	ctn.Refresh = flag.String("refresh", env("ES_REFRESH", "true"), "")
+	ctn.Refresh = flag.String("refresh", env("ES_REFRESH", "false"), "")
 	ctn.SingleActiveConsumer = flag.Bool("single-active-consumer", singleActiveConsumer, "")
 	ctn.logger = logger
 	bulkTimeout := env("BULK_TIMEOUT", "2m")
