@@ -20,48 +20,48 @@ func main() {
 	}
 
 	ctx := context.Background()
-	ctn := es_writer.NewContainer(logger)
+	cnf := es_writer.NewConfiguration(logger)
 
 	// Credentials can be leaked with debug enabled.
-	if *ctn.Debug {
+	if *cnf.Debug {
 		logger = logger.WithOptions(zap.IncreaseLevel(zap.DebugLevel))
 
 		logger.Info("starting es-writer",
-			zap.String("service", ctn.DataDog.ServiceName),
-			zap.String("rabbitmq.url", *ctn.Url),
-			zap.String("rabbitmq.kind", *ctn.Kind),
-			zap.String("rabbitmq.exchange", *ctn.Exchange),
-			zap.String("rabbitmq.routingKey", *ctn.RoutingKey),
-			zap.Int("rabbitmq.prefetchCount", *ctn.PrefetchCount),
-			zap.Int("rabbitmq.prefetchSize", *ctn.PrefetchSize),
-			zap.String("rabbitmq.queueName", *ctn.QueueName),
-			zap.String("rabbitmq.consumerName", *ctn.ConsumerName),
-			zap.String("elasticSearch.url", *ctn.EsUrl),
-			zap.Duration("tickInterval", *ctn.TickInterval),
-			zap.String("url.contains", *ctn.UrlContain),
-			zap.String("url.notContains", *ctn.UrlNotContain),
+			zap.String("service", cnf.DataDog.ServiceName),
+			zap.String("rabbitmq.url", *cnf.Url),
+			zap.String("rabbitmq.kind", *cnf.Kind),
+			zap.String("rabbitmq.exchange", *cnf.Exchange),
+			zap.String("rabbitmq.routingKey", *cnf.RoutingKey),
+			zap.Int("rabbitmq.prefetchCount", *cnf.PrefetchCount),
+			zap.Int("rabbitmq.prefetchSize", *cnf.PrefetchSize),
+			zap.String("rabbitmq.queueName", *cnf.QueueName),
+			zap.String("rabbitmq.consumerName", *cnf.ConsumerName),
+			zap.String("elasticSearch.url", *cnf.EsUrl),
+			zap.Duration("tickInterval", *cnf.TickInterval),
+			zap.String("url.contains", *cnf.UrlContain),
+			zap.String("url.notContains", *cnf.UrlNotContain),
 		)
 	}
 
-	if ctn.DataDog.Host != "" {
-		addr := net.JoinHostPort(ctn.DataDog.Host, ctn.DataDog.Port)
+	if cnf.DataDog.Host != "" {
+		addr := net.JoinHostPort(cnf.DataDog.Host, cnf.DataDog.Port)
 
 		tracer.Start(
 			tracer.WithAgentAddr(addr),
-			tracer.WithServiceName(ctn.DataDog.ServiceName),
-			tracer.WithGlobalTag("env", ctn.DataDog.Env),
+			tracer.WithServiceName(cnf.DataDog.ServiceName),
+			tracer.WithGlobalTag("env", cnf.DataDog.Env),
 		)
 
 		defer tracer.Stop()
 	}
 
-	app, err, onErrorCh := ctn.App()
+	app, err, onErrorCh := cnf.App()
 	if err != nil {
 		logger.Panic("failed to get the app", zap.Error(err))
 	}
 
 	go func() {
-		if err := app.Run(ctx, ctn); err != nil {
+		if err := app.Run(ctx, cnf); err != nil {
 			logger.Panic("application error", zap.Error(err))
 			onErrorCh <- true
 		}

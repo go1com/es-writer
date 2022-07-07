@@ -20,8 +20,8 @@ import (
 	"gopkg.in/olivere/elastic.v5"
 )
 
-func container() Container {
-	ctn := Container{}
+func container() Configuration {
+	cnf := Configuration{}
 
 	url := env("RABBITMQ_URL", "amqp://guest:guest@127.0.0.1:5672/")
 	kind := env("RABBITMQ_KIND", "topic")
@@ -38,23 +38,23 @@ func container() Container {
 	debug := true
 	refresh := "true"
 
-	ctn.Url = &url
-	ctn.Kind = &kind
-	ctn.Exchange = &exchange
-	ctn.RoutingKey = &routingKey
-	ctn.PrefetchCount = &prefetchCount
-	ctn.PrefetchSize = &prefetchSize
-	ctn.TickInterval = &tickInterval
-	ctn.QueueName = &queueName
-	ctn.UrlContain = &urlContain
-	ctn.UrlNotContain = &urlNotContain
-	ctn.ConsumerName = &consumerName
-	ctn.EsUrl = &esUrl
-	ctn.Debug = &debug
-	ctn.Refresh = &refresh
-	ctn.logger = zap.NewNop()
+	cnf.Url = &url
+	cnf.Kind = &kind
+	cnf.Exchange = &exchange
+	cnf.RoutingKey = &routingKey
+	cnf.PrefetchCount = &prefetchCount
+	cnf.PrefetchSize = &prefetchSize
+	cnf.TickInterval = &tickInterval
+	cnf.QueueName = &queueName
+	cnf.UrlContain = &urlContain
+	cnf.UrlNotContain = &urlNotContain
+	cnf.ConsumerName = &consumerName
+	cnf.EsUrl = &esUrl
+	cnf.Debug = &debug
+	cnf.Refresh = &refresh
+	cnf.logger = zap.NewNop()
 
-	return ctn
+	return cnf
 }
 
 func idle(app *App) {
@@ -70,7 +70,7 @@ func idle(app *App) {
 	}
 }
 
-func queue(ch *amqp.Channel, ctn Container, file string) {
+func queue(ch *amqp.Channel, ctn Configuration, file string) {
 	msg := amqp.Publishing{Body: fixture(file)}
 	err := ch.Publish(*ctn.Exchange, *ctn.RoutingKey, false, false, msg)
 

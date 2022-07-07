@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,7 +32,7 @@ var (
 	}
 )
 
-type Container struct {
+type Configuration struct {
 	Url                  *string
 	Kind                 *string
 	Exchange             *string
@@ -71,7 +72,7 @@ func env(key string, defaultValue string) string {
 	return value
 }
 
-func NewContainer(logger *zap.Logger) Container {
+func NewConfiguration(logger *zap.Logger) Configuration {
 	var (
 		duration       = env("DURATION", "5")
 		iDuration, err = strconv.ParseInt(duration, 10, 64)
@@ -97,49 +98,52 @@ func NewContainer(logger *zap.Logger) Container {
 		logger.Panic("invalid debug value", zap.Error(err))
 	}
 
-	ctn := Container{}
-	ctn.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
-	ctn.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
-	ctn.Exchange = flag.String("exchange", env("RABBITMQ_EXCHANGE", "events"), "")
-	ctn.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "es.writer.go1"), "")
-	ctn.PrefetchCount = flag.Int("prefetch-count", iPrefetchCount, "")
-	ctn.PrefetchSize = flag.Int("prefetch-size", 0, "")
-	ctn.TickInterval = flag.Duration("tick-iterval", time.Duration(iDuration)*time.Second, "")
-	ctn.QueueName = flag.String("queue-name", env("RABBITMQ_QUEUE_NAME", "es-writer"), "")
-	ctn.UrlContain = flag.String("url-contains", env("URL_CONTAINS", ""), "")
-	ctn.UrlNotContain = flag.String("url-not-contains", env("URL_NOT_CONTAINS", ""), "")
-	ctn.ConsumerName = flag.String("consumer-name", env("RABBITMQ_CONSUMER_NAME", "es-writter"), "")
-	ctn.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
-	ctn.Debug = flag.Bool("debug", debug, "Enable with care; credentials can be leaked if this is on.")
-	ctn.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
-	ctn.Refresh = flag.String("refresh", env("ES_REFRESH", "false"), "")
-	ctn.SingleActiveConsumer = flag.Bool("single-active-consumer", singleActiveConsumer, "")
-	ctn.logger = logger
+	cnf := Configuration{}
+	cnf.Url = flag.String("url", env("RABBITMQ_URL", "amqp://go1:go1@127.0.0.1:5672/"), "")
+	cnf.Kind = flag.String("kind", env("RABBITMQ_KIND", "topic"), "")
+	cnf.Exchange = flag.String("exchange", env("RABBITMQ_EXCHANGE", "events"), "")
+	cnf.RoutingKey = flag.String("routing-key", env("RABBITMQ_ROUTING_KEY", "es.writer.go1"), "")
+	cnf.PrefetchCount = flag.Int("prefetch-count", iPrefetchCount, "")
+	cnf.PrefetchSize = flag.Int("prefetch-size", 0, "")
+	cnf.TickInterval = flag.Duration("tick-iterval", time.Duration(iDuration)*time.Second, "")
+	cnf.QueueName = flag.String("queue-name", env("RABBITMQ_QUEUE_NAME", "es-writer"), "")
+	cnf.UrlContain = flag.String("url-contains", env("URL_CONTAINS", ""), "")
+	cnf.UrlNotContain = flag.String("url-not-contains", env("URL_NOT_CONTAINS", ""), "")
+	cnf.ConsumerName = flag.String("consumer-name", env("RABBITMQ_CONSUMER_NAME", "es-writter"), "")
+	cnf.Debug = flag.Bool("debug", debug, "Enable with care; credentials can be leaked if this is on.")
+	cnf.AdminPort = flag.String("admin-port", env("ADMIN_PORT", ":8001"), "")
+	cnf.Refresh = flag.String("refresh", env("ES_REFRESH", "false"), "")
+	cnf.SingleActiveConsumer = flag.Bool("single-active-consumer", singleActiveConsumer, "")
+	cnf.logger = logger
 	bulkTimeout := env("BULK_TIMEOUT", "2m")
-	ctn.BulkTimeoutString = flag.String("bulk-timeout", bulkTimeout, "")
+	cnf.BulkTimeoutString = flag.String("bulk-timeout", bulkTimeout, "")
+	cnf.EsUrl = flag.String("es-url", env("ELASTIC_SEARCH_URL", "http://127.0.0.1:9200/?sniff=false"), "")
+	if !strings.Contains(*cnf.EsUrl, "sniff=") {
+		*cnf.EsUrl = *cnf.EsUrl + "?sniff=false"
+	}
 
 	flag.Parse()
 
 	if host := env("DD_AGENT_HOST", ""); host != "" {
 		serviceName := flag.String("name", env("SERVICE_NAME", "es-writer"), "")
 
-		ctn.DataDog = DataDogConfig{
+		cnf.DataDog = DataDogConfig{
 			Host:        host,
 			Port:        env("DD_AGENT_PORT", "8126"),
 			ServiceName: *serviceName,
 			Env:         env("DD_ENV", "dev"),
 		}
 
-		if ctn.DataDog.Env == "dev" {
+		if cnf.DataDog.Env == "dev" {
 			// legacy config
-			ctn.DataDog.Env = env("ENVIRONMENT", "dev")
+			cnf.DataDog.Env = env("ENVIRONMENT", "dev")
 		}
 	}
 
-	return ctn
+	return cnf
 }
 
-func (this *Container) queueConnection() (*amqp.Connection, error) {
+func (this *Configuration) queueConnection() (*amqp.Connection, error) {
 	url := *this.Url
 	con, err := amqp.Dial(url)
 
@@ -161,7 +165,7 @@ func (this *Container) queueConnection() (*amqp.Connection, error) {
 	return con, nil
 }
 
-func (this *Container) queueChannel(con *amqp.Connection) (*amqp.Channel, error) {
+func (this *Configuration) queueChannel(con *amqp.Connection) (*amqp.Channel, error) {
 	ch, err := con.Channel()
 	if nil != err {
 		return nil, err
@@ -208,7 +212,7 @@ func (this *Container) queueChannel(con *amqp.Connection) (*amqp.Channel, error)
 	return ch, nil
 }
 
-func (this *Container) elasticSearchClient() (*elastic.Client, error) {
+func (this *Configuration) elasticSearchClient() (*elastic.Client, error) {
 	cfg, err := config.Parse(*this.EsUrl)
 
 	if err != nil {
@@ -225,7 +229,7 @@ func (this *Container) elasticSearchClient() (*elastic.Client, error) {
 	return client, nil
 }
 
-func (this *Container) App() (*App, error, chan bool) {
+func (this *Configuration) App() (*App, error, chan bool) {
 	con, err := this.queueConnection()
 	if err != nil {
 		return nil, err, nil

@@ -16,7 +16,7 @@ type RabbitMqInput struct {
 	tags   []uint64
 }
 
-func (this *RabbitMqInput) messages(flags Container) <-chan amqp.Delivery {
+func (this *RabbitMqInput) messages(flags Configuration) <-chan amqp.Delivery {
 	args := amqp.Table{}
 	if flags.SingleActiveConsumer != nil {
 		if *flags.SingleActiveConsumer {
@@ -43,7 +43,7 @@ func (this *RabbitMqInput) messages(flags Container) <-chan amqp.Delivery {
 	return messages
 }
 
-func (this *RabbitMqInput) start(ctx context.Context, container Container, handler PushCallback) error {
+func (this *RabbitMqInput) start(ctx context.Context, container Configuration, handler PushCallback) error {
 	messages := this.messages(container)
 	for {
 		var err error

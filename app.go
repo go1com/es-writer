@@ -43,7 +43,7 @@ type App struct {
 	spans             []tracer.Span
 }
 
-func (this *App) Run(ctx context.Context, container Container) error {
+func (this *App) Run(ctx context.Context, container Configuration) error {
 	handler := this.push()
 
 	return this.rabbit.start(ctx, container, handler)
