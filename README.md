@@ -45,7 +45,7 @@ Ref https://www.elastic.co/guide/en/elasticsearch/reference/5.2/docs-bulk.html
         -url-not-contains URL_NOT_CONTAINS<STRING> # example: `award:`
         -prefetch-count  RABBITMQ_PREFETCH_COUNT<INT=50>
         -es-url          ELASTIC_SEARCH_URL<STRING=http://127.0.0.1:9200/?sniff=false>
-        -refresh         true # Optional. allowed values: true, wait_for. default is true
+        -refresh         true # Optional. allowed values: true, wait_for. default is false
         -admin-port      ADMIN_PORT<STRING=:8001>
         -debug           DEBUG<BOOL=true>. Default is false
         -single-active-consumer SINGLE_ACTIVE_CONSUMER<BOOL=true>. default is false. @see https://www.rabbitmq.com/consumers.html#single-active-consumer
